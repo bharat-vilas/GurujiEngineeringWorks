@@ -42,4 +42,3 @@ OAuthTokenSchema.pre("save", function (next) {
 const OAuthToken = mongoose.model("OAuthToken", OAuthTokenSchema);
 
 export default OAuthToken;
-

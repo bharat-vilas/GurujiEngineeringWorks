@@ -21,4 +21,3 @@ export const clients=[
         email: "" 
     }
 ]
-//mongodb+srv://bharat2001:FpJuopQ2j8qyEvZI@clusterb.52m9rnf.mongodb.net/      --->  my connection string

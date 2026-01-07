@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  FileTextOutlined, 
-  DollarOutlined, 
-  CarOutlined, 
+import {
+  FileTextOutlined,
+  DollarOutlined,
+  CarOutlined,
   LogoutOutlined,
   MenuOutlined,
   CloseOutlined,
   UserAddOutlined,
   LeftOutlined,
   RightOutlined,
-  MailOutlined
+  MailOutlined,
 } from "@ant-design/icons";
 
 interface SidebarProps {
@@ -21,9 +21,15 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
 }
 
-const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: SidebarProps) => {
+const Sidebar = ({
+  activeTab,
+  setActiveTab,
+  onLogout,
+  isOpen,
+  setIsOpen,
+}: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
-  
+
   const menuItems = [
     {
       id: "quotation",
@@ -66,7 +72,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: Sideb
     open: {
       x: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 30,
       },
@@ -74,7 +80,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: Sideb
     closed: {
       x: "-100%",
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 30,
       },
@@ -86,7 +92,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: Sideb
       opacity: 1,
       x: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 100,
         damping: 15,
       },
@@ -132,7 +138,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: Sideb
             ? "open"
             : "closed"
         }
-        className={`fixed left-0 top-0 h-screen bg-white shadow-xl z-50 lg:relative lg:h-full flex flex-col transition-all duration-300 relative ${
+        className={`fixed left-0 top-0 h-screen bg-white shadow-xl z-50 lg:relative lg:h-full flex flex-col transition-all duration-300 ${
           collapsed ? "w-20" : "w-64"
         }`}
       >
@@ -164,7 +170,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: Sideb
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
-            
+
             return (
               <motion.button
                 key={item.id}
@@ -179,9 +185,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: Sideb
                 className={`w-full flex items-center ${
                   collapsed ? "justify-center px-2" : "space-x-3 px-4"
                 } py-3 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? item.activeColor + " shadow-md"
-                    : item.color
+                  isActive ? item.activeColor + " shadow-md" : item.color
                 }`}
                 title={collapsed ? item.label : undefined}
               >
@@ -232,4 +236,3 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: Sideb
 };
 
 export default Sidebar;
-
