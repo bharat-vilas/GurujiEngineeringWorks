@@ -30,6 +30,14 @@ const ClientSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  state: {
+    type: String,
+    trim: true,
+  },
+  pinCode: {
+    type: String,
+    trim: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

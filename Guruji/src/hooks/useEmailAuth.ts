@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { message } from "antd";
+import { toast } from "sonner";
 import { checkEmailAuthStatus, getEmailAuthUrl } from "../utils/email";
 
 export const useEmailAuth = () => {
@@ -29,7 +29,7 @@ export const useEmailAuth = () => {
       const authUrl = await getEmailAuthUrl();
       window.location.href = authUrl;
     } catch (error) {
-      message.error("Failed to initiate email authentication");
+      toast.error("Failed to initiate email authentication");
       console.error("Error getting auth URL:", error);
     }
   };

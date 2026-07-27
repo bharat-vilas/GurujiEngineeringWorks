@@ -1,17 +1,22 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  FileTextOutlined,
-  DollarOutlined,
-  CarOutlined,
-  LogoutOutlined,
-  MenuOutlined,
-  CloseOutlined,
-  UserAddOutlined,
-  LeftOutlined,
-  RightOutlined,
-  MailOutlined,
-} from "@ant-design/icons";
+  FileText,
+  Receipt,
+  Truck,
+  UserPlus,
+  Mail,
+  LogOut,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  CalendarCheck,
+  TrendingUp,
+  Home,
+} from "lucide-react";
+import { cn } from "../lib/utils";
 
 interface SidebarProps {
   activeTab: string;
@@ -21,214 +26,202 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
 }
 
-const Sidebar = ({
-  activeTab,
-  setActiveTab,
-  onLogout,
-  isOpen,
-  setIsOpen,
-}: SidebarProps) => {
+const menuItems = [
+  {
+    id: "home",
+    label: "Home",
+    icon: Home,
+    color: "text-amber-700",
+    activeBg: "bg-amber-500",
+    hoverBg: "hover:bg-amber-50",
+    dot: "bg-amber-500",
+  },
+  {
+    id: "quotation",
+    label: "Quotation",
+    icon: FileText,
+    color: "text-emerald-700",
+    activeBg: "bg-emerald-600",
+    hoverBg: "hover:bg-emerald-50",
+    dot: "bg-emerald-500",
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    icon: Receipt,
+    color: "text-purple-700",
+    activeBg: "bg-purple-600",
+    hoverBg: "hover:bg-purple-50",
+    dot: "bg-purple-500",
+  },
+  {
+    id: "challan",
+    label: "Challan",
+    icon: Truck,
+    color: "text-blue-700",
+    activeBg: "bg-blue-600",
+    hoverBg: "hover:bg-blue-50",
+    dot: "bg-blue-500",
+  },
+  {
+    id: "register-client",
+    label: "Clients",
+    icon: UserPlus,
+    color: "text-orange-700",
+    activeBg: "bg-orange-500",
+    hoverBg: "hover:bg-orange-50",
+    dot: "bg-orange-500",
+  },
+  {
+    id: "mail",
+    label: "Mail",
+    icon: Mail,
+    color: "text-indigo-700",
+    activeBg: "bg-indigo-600",
+    hoverBg: "hover:bg-indigo-50",
+    dot: "bg-indigo-500",
+  },
+  {
+    id: "employees",
+    label: "Employees",
+    icon: Users,
+    color: "text-rose-700",
+    activeBg: "bg-rose-600",
+    hoverBg: "hover:bg-rose-50",
+    dot: "bg-rose-500",
+  },
+  {
+    id: "attendance",
+    label: "Attendance",
+    icon: CalendarCheck,
+    color: "text-teal-700",
+    activeBg: "bg-teal-600",
+    hoverBg: "hover:bg-teal-50",
+    dot: "bg-teal-500",
+  },
+  {
+    id: "financials",
+    label: "Financials",
+    icon: TrendingUp,
+    color: "text-violet-700",
+    activeBg: "bg-violet-600",
+    hoverBg: "hover:bg-violet-50",
+    dot: "bg-violet-500",
+  },
+];
+
+const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
-
-  const menuItems = [
-    {
-      id: "quotation",
-      label: "Quotation",
-      icon: FileTextOutlined,
-      color: "bg-green-50 hover:bg-green-100 text-green-700",
-      activeColor: "bg-green-600 text-white",
-    },
-    {
-      id: "billing",
-      label: "Billing",
-      icon: DollarOutlined,
-      color: "bg-purple-50 hover:bg-purple-100 text-purple-700",
-      activeColor: "bg-purple-600 text-white",
-    },
-    {
-      id: "challan",
-      label: "Challan",
-      icon: CarOutlined,
-      color: "bg-blue-50 hover:bg-blue-100 text-blue-700",
-      activeColor: "bg-blue-600 text-white",
-    },
-    {
-      id: "register-client",
-      label: "Register Client",
-      icon: UserAddOutlined,
-      color: "bg-orange-50 hover:bg-orange-100 text-orange-700",
-      activeColor: "bg-orange-600 text-white",
-    },
-    {
-      id: "mail",
-      label: "Mail",
-      icon: MailOutlined,
-      color: "bg-indigo-50 hover:bg-indigo-100 text-indigo-700",
-      activeColor: "bg-indigo-600 text-white",
-    },
-  ];
-
-  const sidebarVariants = {
-    open: {
-      x: 0,
-      transition: {
-        type: "spring" as const,
-        stiffness: 300,
-        damping: 30,
-      },
-    },
-    closed: {
-      x: "-100%",
-      transition: {
-        type: "spring" as const,
-        stiffness: 300,
-        damping: 30,
-      },
-    },
-  };
-
-  const itemVariants = {
-    open: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        type: "spring" as const,
-        stiffness: 100,
-        damping: 15,
-      },
-    },
-    closed: {
-      opacity: 0,
-      x: -20,
-    },
-  };
 
   return (
     <>
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-20 left-4 z-50 lg:hidden p-2 rounded-lg bg-white shadow-lg hover:bg-gray-100 transition-colors"
+        className="fixed top-[72px] left-3 z-50 lg:hidden p-2 rounded-lg bg-white shadow-md border border-border hover:bg-muted transition-colors"
         aria-label="Toggle menu"
       >
-        {isOpen ? (
-          <CloseOutlined className="text-lg text-gray-700" />
-        ) : (
-          <MenuOutlined className="text-lg text-gray-700" />
-        )}
+        {isOpen ? <X className="h-4 w-4 text-muted-foreground" /> : <Menu className="h-4 w-4 text-muted-foreground" />}
       </button>
 
-      {/* Overlay for mobile */}
+      {/* Mobile overlay */}
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
         />
       )}
 
       {/* Sidebar */}
       <motion.aside
-        variants={sidebarVariants}
         initial={false}
-        animate={
-          isOpen || (typeof window !== "undefined" && window.innerWidth >= 1024)
-            ? "open"
-            : "closed"
-        }
-        className={`fixed left-0 top-0 h-screen bg-white shadow-xl z-50 lg:relative lg:h-full flex flex-col transition-all duration-300 ${
-          collapsed ? "w-20" : "w-64"
-        }`}
+        animate={{
+          x: isOpen || (typeof window !== "undefined" && window.innerWidth >= 1024) ? 0 : "-100%",
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className={cn(
+          "fixed left-0 top-0 h-screen bg-white border-r border-border z-50 flex flex-col shadow-lg",
+          "lg:relative lg:h-full lg:translate-x-0 lg:shadow-none",
+          "transition-[width] duration-300",
+          collapsed ? "w-[72px]" : "w-60"
+        )}
       >
-        {/* Collapse/Expand Toggle Button (Desktop only) - Positioned at right edge, vertically centered */}
+        {/* Collapse toggle - desktop only */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 p-2 rounded-full bg-white shadow-lg border border-gray-200 hover:bg-gray-100 transition-colors items-center justify-center"
+          className="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-10 h-7 w-7 items-center justify-center rounded-full bg-white border border-border shadow-sm hover:bg-muted transition-colors"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? (
-            <RightOutlined className="text-base text-gray-600" />
-          ) : (
-            <LeftOutlined className="text-base text-gray-600" />
-          )}
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />}
         </button>
 
-        {/* Close button for mobile */}
-        <div className="lg:hidden p-4 border-b border-gray-200 flex justify-end">
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-1 rounded hover:bg-gray-100"
-          >
-            <CloseOutlined className="text-base text-gray-600" />
+        {/* Mobile close button */}
+        <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border">
+          <span className="text-sm font-semibold text-foreground">Navigation</span>
+          <button onClick={() => setIsOpen(false)} className="p-1 rounded hover:bg-muted transition-colors">
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
-        {/* Menu Items */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
-          {menuItems.map((item, index) => {
+        {/* Brand mark when collapsed */}
+        {collapsed && (
+          <div className="hidden lg:flex items-center justify-center py-4 border-b border-border">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground text-xs font-bold">GE</span>
+            </div>
+          </div>
+        )}
+
+        {/* Nav Items */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+          {menuItems.map((item, idx) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
 
             return (
               <motion.button
                 key={item.id}
-                variants={itemVariants}
-                initial="closed"
-                animate="open"
-                transition={{ delay: index * 0.1 }}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setIsOpen(false);
-                }}
-                className={`w-full flex items-center ${
-                  collapsed ? "justify-center px-2" : "space-x-3 px-4"
-                } py-3 rounded-lg transition-all duration-200 ${
-                  isActive ? item.activeColor + " shadow-md" : item.color
-                }`}
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                onClick={() => { setActiveTab(item.id); setIsOpen(false); }}
                 title={collapsed ? item.label : undefined}
+                className={cn(
+                  "w-full flex items-center rounded-lg transition-all duration-200 font-medium text-sm",
+                  collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5",
+                  isActive
+                    ? `${item.activeBg} text-white shadow-sm`
+                    : `${item.color} ${item.hoverBg} text-opacity-80`
+                )}
               >
-                <Icon className="text-lg flex-shrink-0" />
+                <Icon className="h-[18px] w-[18px] flex-shrink-0" />
                 {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: "auto" }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="font-medium whitespace-nowrap"
-                  >
-                    {item.label}
-                  </motion.span>
+                  <span className="truncate">{item.label}</span>
+                )}
+                {!collapsed && isActive && (
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/70 flex-shrink-0" />
                 )}
               </motion.button>
             );
           })}
         </nav>
 
-        {/* Logout Button */}
-        <div className="p-4 border-t border-gray-200">
-          <motion.button
-            variants={itemVariants}
-            initial="closed"
-            animate="open"
+        {/* Logout */}
+        <div className={cn("p-3 border-t border-border", collapsed && "flex justify-center")}>
+          <button
             onClick={onLogout}
-            className={`w-full flex items-center ${
-              collapsed ? "justify-center px-2" : "space-x-3 px-4"
-            } py-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 transition-all duration-200`}
             title={collapsed ? "Logout" : undefined}
-          >
-            <LogoutOutlined className="text-lg flex-shrink-0" />
-            {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                className="font-medium whitespace-nowrap"
-              >
-                Logout
-              </motion.span>
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all duration-200",
+              collapsed ? "p-2.5" : "w-full gap-3 px-3 py-2.5"
             )}
-          </motion.button>
+          >
+            <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
+            {!collapsed && <span>Logout</span>}
+          </button>
         </div>
       </motion.aside>
     </>

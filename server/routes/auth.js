@@ -18,7 +18,7 @@ router.post("/login", async (req, res) => {
         .status(400)
         .json({ message: "Email and password are required." });
     }
-
+    
     const admin = await Admin.findOne({ email });
     if (!admin) {
       return res.status(401).json({ message: "Invalid email or password." });
@@ -194,5 +194,25 @@ router.get("/me", authenticateToken, async (req, res) => {
   }
 });
 
-// ✅ Use export default instead of module.exports
+// POST /api/auth/reset-password
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
+      return res.status(400).json({ message: "Email and new password are required." });
+    }
+    const admin = await Admin.findOne({ email });
+    if (!admin) {
+      return res.status(404).json({ message: "No account found with that email." });
+    }
+    admin.password = await bcrypt.hash(newPassword, 10);
+    admin.refreshToken = null;
+    await admin.save();
+    return res.status(200).json({ message: "Password reset successfully." });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    return res.status(500).json({ message: "Server error. Please try again later." });
+  }
+});
+
 export default router;

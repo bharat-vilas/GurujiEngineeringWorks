@@ -1,51 +1,40 @@
-import React, { useState, useEffect } from "react";
-import {
-  Form,
-  Input,
-  Button,
-  Card,
-  Table,
-  Space,
-  DatePicker,
-  Col,
-  Row,
-  Select,
-  message,
-} from "antd";
-import { MailOutlined, DownloadOutlined } from "@ant-design/icons";
-import type { DefaultOptionType } from "antd/es/select";
-import { sendEmail } from "../utils/email";
-import { useEmailAuth } from "../hooks/useEmailAuth";
-import { formatSerialNumber } from "../utils/serialNumberFormatter";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { Mail, Download, Plus, Trash2, User, Truck, Eye, EyeOff } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { DatePicker } from "../components/ui/date-picker";
+import { Badge } from "../components/ui/badge";
+import { Switch } from "../components/ui/switch";
+import { cn } from "../lib/utils";
 import { api } from "../utils/api";
+import { useEmailAuth } from "../hooks/useEmailAuth";
+import { sendEmail } from "../utils/email";
 
-type ClientOption = DefaultOptionType & {
-  firm?: string;
-  address?: string;
-  email?: string;
-};
+interface ClientOption {
+  label: string;
+  value: string;
+  firm: string;
+  address: string;
+  email: string;
+  gstin: string;
+  state: string;
+  pinCode: string;
+}
 
 export default function ChallanCanvas({
-  setClientInfo,
-  clientInfo,
-  setRecipientEmail,
-  recipientEmail,
-  setQuotationDate,
-  quotationDate,
-  handleAddItem,
-  downloadPDF,
-  handleCellChange,
-  handleDeleteItem,
-  items,
-  supplyInfo,
-  setSupplyInfo,
-  challanSerial,
+  setClientInfo, clientInfo, setRecipientEmail, recipientEmail,
+  setQuotationDate, quotationDate, handleAddItem, downloadPDF,
+  handleCellChange, handleDeleteItem, items, supplyInfo, setSupplyInfo,
+  shippedToInfo, setShippedToInfo,
 }: any) {
   const [clientOptions, setClientOptions] = useState<ClientOption[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const { isAuthenticated, authenticate } = useEmailAuth();
 
-  // Fetch clients from backend
   useEffect(() => {
     const fetchClients = async () => {
       setLoadingClients(true);
@@ -53,643 +42,299 @@ export default function ChallanCanvas({
         const response = await api.get("/api/clients");
         if (response.ok) {
           const clients = await response.json();
-          // Transform backend data to Select component format
-          const options = clients.map((client: any) => ({
-            label: `${client.name} - ${client.firm}`,
-            value: client.name,
-            firm: client.firm,
-            address: client.address,
-            email: client.email || "",
-            phone: client.phone || "",
-            gstin: client.gstin || "",
-          }));
-          setClientOptions(options);
+          setClientOptions(clients.map((c: any) => ({
+            label: `${c.name} — ${c.firm}`,
+            value: c.name,
+            firm: c.firm,
+            address: c.address,
+            email: c.email || "",
+            gstin: c.gstin || "",
+            state: c.state || "",
+            pinCode: c.pinCode || "",
+          })));
         } else {
-          message.error("Failed to load clients");
+          toast.error("Failed to load clients");
         }
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-        message.error("Error loading clients");
+      } catch {
+        toast.error("Error loading clients");
       } finally {
         setLoadingClients(false);
       }
     };
-
     fetchClients();
   }, []);
-  const totalAmount = items.reduce(
-    (sum: any, item: any) => sum + item.rate * item.qty,
-    0
-  );
+
+  const totalAmount = items.reduce((sum: number, item: any) => sum + item.rate * item.qty, 0);
 
   const handleSendEmail = async () => {
-    if (!recipientEmail) {
-      message.error("Please enter recipient email address");
-      return;
-    }
-
+    if (!recipientEmail) { toast.error("Please enter recipient email address"); return; }
     if (!isAuthenticated) {
-      message.warning({
-        content: "Please authenticate with Google to send emails",
-        duration: 3,
-      });
+      toast.warning("Please authenticate with Google to send emails");
       await authenticate();
       return;
     }
-
     try {
-      message.loading({ content: "Sending email...", key: "sendEmail" });
-
-      const emailBody = `Dear ${clientInfo.name || "Client"},\n\nPlease find attached your challan from Guruji Engineering Works.\n\nThank you for your business.`;
-
+      const tid = toast.loading("Sending email...");
       await sendEmail({
         to: recipientEmail,
         subject: "Challan - Guruji Engineering Works",
-        textBody: emailBody,
+        textBody: `Dear ${clientInfo.name || "Client"},\n\nPlease find attached your challan from Guruji Engineering Works.\n\nThank you for your business.`,
       });
-
-      message.success({
-        content: "Email sent successfully!",
-        key: "sendEmail",
-        duration: 2,
-      });
+      toast.dismiss(tid);
+      toast.success("Email sent successfully!");
     } catch (error: any) {
-      message.error({
-        content: error.message || "Failed to send email. Please try again.",
-        key: "sendEmail",
-      });
-      console.error("Email sending error:", error);
+      toast.error(error.message || "Failed to send email.");
     }
   };
 
+  const handleClientSelect = (value: string) => {
+    if (!value) {
+      setClientInfo({ name: "", firm: "", address: "" });
+      setRecipientEmail("");
+      return;
+    }
+    const client = clientOptions.find(c => c.value === value);
+    if (client) {
+      setClientInfo({ name: client.value, firm: client.firm, address: client.address, gstin: client.gstin, state: client.state, pinCode: client.pinCode });
+      setRecipientEmail(client.email);
+    }
+  };
+
+  const setSupply = (key: string, val: any) =>
+    setSupplyInfo((prev: any) => ({ ...prev, [key]: val }));
+
   return (
     <div className="h-full p-4 overflow-y-auto custom-scrollbar">
-      <Card style={{ paddingBottom: "10px" }}>
-        <div className="flex flex-col gap-5">
-        {/* Header Section */}
-        <div style={{ marginBottom: 20 }}>
-          <h2 style={{ color: "#1890ff", margin: 0, textAlign: "center" }}>
-            CHALLAN INVOICE
-          </h2>
-        </div>
-
-        {/* Client Selection */}
-        <div style={{ marginBottom: 20 }}>
-          <label
-            style={{ fontWeight: "bold", fontSize: "15px", color: "#333" }}
-          >
-            Select Client
-          </label>
-          <Select
-            style={{ width: "100%", marginTop: "8px" }}
-            placeholder="Choose a client"
-            options={clientOptions}
-            allowClear
-            size="large"
-            loading={loadingClients}
-            onChange={(value, option) => {
-              const client = option as ClientOption;
-              if (client) {
-                setClientInfo((prev: any) => ({
-                  ...prev,
-                  name: client.value as string,
-                  firm: client.firm ?? "",
-                  address: client.address ?? "",
-                }));
-                setRecipientEmail(client.email ?? "");
-              } else {
-                setClientInfo({ name: "", firm: "", address: "" });
-                setRecipientEmail("");
-              }
-            }}
-          />
-        </div>
-
-        {/* Supply Information */}
-        <div
-          style={{
-            backgroundColor: "#fff3cd",
-            padding: "10px",
-            borderRadius: "8px",
-            marginBottom: "15px",
-            border: "2px solid #ffc107",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "10px",
-            }}
-          >
-            <h4 style={{ color: "#856404", fontSize: "14px", margin: 0 }}>
-              Supply Information
-            </h4>
-            <Button
-              size="small"
-              type={supplyInfo?.showInPreview ? "primary" : "default"}
-              onClick={() =>
-                setSupplyInfo((prev: any) => ({
-                  ...prev,
-                  showInPreview: !prev?.showInPreview,
-                }))
-              }
-              style={{
-                fontSize: "11px",
-                padding: "2px 8px",
-                backgroundColor: supplyInfo?.showInPreview
-                  ? "#52c41a"
-                  : "#f5f5f5",
-                borderColor: supplyInfo?.showInPreview ? "#52c41a" : "#d9d9d9",
-              }}
-            >
-              {supplyInfo?.showInPreview
-                ? "Hide in Preview"
-                : "Show in Preview"}
-            </Button>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-bold text-foreground">Delivery Challan</CardTitle>
+            <Badge className="text-xs font-mono bg-blue-100 text-blue-700 border-blue-200">CHALLAN</Badge>
           </div>
-          <Row gutter={12}>
-            <Col span={12}>
-              <div style={{ marginBottom: "8px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "3px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontWeight: "bold",
-                      fontSize: "12px",
-                    }}
-                  >
-                    Date of Supply
-                  </label>
-                  <Button
-                    size="small"
-                    type={supplyInfo?.showDateOfSupply ? "primary" : "default"}
-                    onClick={() =>
-                      setSupplyInfo((prev: any) => ({
-                        ...prev,
-                        showDateOfSupply: !prev?.showDateOfSupply,
-                      }))
-                    }
-                    style={{
-                      fontSize: "10px",
-                      padding: "1px 6px",
-                      backgroundColor: supplyInfo?.showDateOfSupply
-                        ? "#52c41a"
-                        : "#f5f5f5",
-                      borderColor: supplyInfo?.showDateOfSupply
-                        ? "#52c41a"
-                        : "#d9d9d9",
-                    }}
-                  >
-                    {supplyInfo?.showDateOfSupply ? "Hide" : "Show"}
-                  </Button>
-                </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+
+          {/* Client Selection */}
+          <div className="space-y-1.5">
+            <Label>Select Existing Client</Label>
+            <Select onValueChange={handleClientSelect} disabled={loadingClients}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingClients ? "Loading clients..." : "Choose a client..."} />
+              </SelectTrigger>
+              <SelectContent>
+                {clientOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Supply Information */}
+          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Truck className="h-4 w-4 text-amber-600" />
+                <h4 className="text-sm font-semibold text-amber-800">Supply Information</h4>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Show in preview</span>
+                <Switch
+                  checked={supplyInfo?.showInPreview}
+                  onCheckedChange={v => setSupply("showInPreview", v)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <SupplyField
+                label="Date of Supply"
+                show={supplyInfo?.showDateOfSupply}
+                onToggle={() => setSupply("showDateOfSupply", !supplyInfo?.showDateOfSupply)}
+              >
                 <DatePicker
-                  placeholder="Select supply date"
-                  size="middle"
-                  style={{ width: "100%" }}
-                  onChange={(date) =>
-                    setSupplyInfo((prev: any) => ({
-                      ...prev,
-                      dateOfSupply: date,
-                    }))
-                  }
                   value={supplyInfo?.dateOfSupply}
+                  onChange={d => setSupply("dateOfSupply", d)}
                 />
-              </div>
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: "8px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "3px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontWeight: "bold",
-                      fontSize: "12px",
-                    }}
-                  >
-                    Place of Supply
-                  </label>
-                  <Button
-                    size="small"
-                    type={supplyInfo?.showPlaceOfSupply ? "primary" : "default"}
-                    onClick={() =>
-                      setSupplyInfo((prev: any) => ({
-                        ...prev,
-                        showPlaceOfSupply: !prev?.showPlaceOfSupply,
-                      }))
-                    }
-                    style={{
-                      fontSize: "10px",
-                      padding: "1px 6px",
-                      backgroundColor: supplyInfo?.showPlaceOfSupply
-                        ? "#52c41a"
-                        : "#f5f5f5",
-                      borderColor: supplyInfo?.showPlaceOfSupply
-                        ? "#52c41a"
-                        : "#d9d9d9",
-                    }}
-                  >
-                    {supplyInfo?.showPlaceOfSupply ? "Hide" : "Show"}
-                  </Button>
-                </div>
-                <Input
-                  placeholder="Enter place of supply"
-                  size="middle"
-                  style={{ fontSize: "14px" }}
-                  value={supplyInfo?.placeOfSupply || ""}
-                  onChange={(e) =>
-                    setSupplyInfo((prev: any) => ({
-                      ...prev,
-                      placeOfSupply: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <div style={{ marginBottom: "8px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "3px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontWeight: "bold",
-                      fontSize: "12px",
-                    }}
-                  >
-                    Transportation Mode
-                  </label>
-                  <Button
-                    size="small"
-                    type={
-                      supplyInfo?.showTransportationMode ? "primary" : "default"
-                    }
-                    onClick={() =>
-                      setSupplyInfo((prev: any) => ({
-                        ...prev,
-                        showTransportationMode: !prev?.showTransportationMode,
-                      }))
-                    }
-                    style={{
-                      fontSize: "10px",
-                      padding: "1px 6px",
-                      backgroundColor: supplyInfo?.showTransportationMode
-                        ? "#52c41a"
-                        : "#f5f5f5",
-                      borderColor: supplyInfo?.showTransportationMode
-                        ? "#52c41a"
-                        : "#d9d9d9",
-                    }}
-                  >
-                    {supplyInfo?.showTransportationMode ? "Hide" : "Show"}
-                  </Button>
-                </div>
-                <Input
-                  placeholder="Enter transportation mode"
-                  size="middle"
-                  style={{ fontSize: "14px" }}
-                  value={supplyInfo?.transportationMode || ""}
-                  onChange={(e) =>
-                    setSupplyInfo((prev: any) => ({
-                      ...prev,
-                      transportationMode: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: "8px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "3px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontWeight: "bold",
-                      fontSize: "12px",
-                    }}
-                  >
-                    Vehicle Number
-                  </label>
-                  <Button
-                    size="small"
-                    type={supplyInfo?.showVehicleNumber ? "primary" : "default"}
-                    onClick={() =>
-                      setSupplyInfo((prev: any) => ({
-                        ...prev,
-                        showVehicleNumber: !prev?.showVehicleNumber,
-                      }))
-                    }
-                    style={{
-                      fontSize: "10px",
-                      padding: "1px 6px",
-                      backgroundColor: supplyInfo?.showVehicleNumber
-                        ? "#52c41a"
-                        : "#f5f5f5",
-                      borderColor: supplyInfo?.showVehicleNumber
-                        ? "#52c41a"
-                        : "#d9d9d9",
-                    }}
-                  >
-                    {supplyInfo?.showVehicleNumber ? "Hide" : "Show"}
-                  </Button>
-                </div>
-                <Input
-                  placeholder="Enter vehicle number"
-                  size="middle"
-                  style={{ fontSize: "14px" }}
-                  value={supplyInfo?.vehicleNumber || ""}
-                  onChange={(e) =>
-                    setSupplyInfo((prev: any) => ({
-                      ...prev,
-                      vehicleNumber: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </Col>
-          </Row>
-        </div>
-
-        {/* Details of Receiver (Auto-filled from Client Selection) */}
-        <div
-          style={{
-            backgroundColor: "#d1ecf1",
-            padding: "10px",
-            borderRadius: "8px",
-            marginBottom: "15px",
-            border: "2px solid #17a2b8",
-          }}
-        >
-          <h4
-            style={{ color: "#0c5460", marginBottom: "10px", fontSize: "14px" }}
-          >
-            Details of Receiver
-          </h4>
-          <Row gutter={12}>
-            <Col span={12}>
-              <div style={{ marginBottom: "8px" }}>
-                <label
-                  style={{
-                    fontWeight: "bold",
-                    display: "block",
-                    marginBottom: "3px",
-                    fontSize: "12px",
-                  }}
-                >
-                  Receiver Name
-                </label>
-                <Input
-                  placeholder="Auto-filled from client selection"
-                  value={clientInfo.name}
-                  size="middle"
-                  style={{ fontSize: "14px", backgroundColor: "#f8f9fa" }}
-                  readOnly
-                />
-              </div>
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: "8px" }}>
-                <label
-                  style={{
-                    fontWeight: "bold",
-                    display: "block",
-                    marginBottom: "3px",
-                    fontSize: "12px",
-                  }}
-                >
-                  Receiver Company
-                </label>
-                <Input
-                  placeholder="Auto-filled from client selection"
-                  value={clientInfo.firm}
-                  size="middle"
-                  style={{ fontSize: "14px", backgroundColor: "#f8f9fa" }}
-                  readOnly
-                />
-              </div>
-            </Col>
-          </Row>
-          <div style={{ marginBottom: "8px" }}>
-            <label
-              style={{
-                fontWeight: "bold",
-                display: "block",
-                marginBottom: "3px",
-                fontSize: "12px",
-              }}
-            >
-              Receiver Address
-            </label>
-            <Input
-              placeholder="Auto-filled from client selection"
-              value={clientInfo.address}
-              size="middle"
-              style={{ fontSize: "14px", backgroundColor: "#f8f9fa" }}
-              readOnly
-            />
+              </SupplyField>
+              <SupplyField
+                label="Place of Supply"
+                show={supplyInfo?.showPlaceOfSupply}
+                onToggle={() => setSupply("showPlaceOfSupply", !supplyInfo?.showPlaceOfSupply)}
+              >
+                <Input placeholder="e.g. Maharashtra" value={supplyInfo?.placeOfSupply || ""}
+                  onChange={e => setSupply("placeOfSupply", e.target.value)} className="h-9 text-sm" />
+              </SupplyField>
+              <SupplyField
+                label="Transportation Mode"
+                show={supplyInfo?.showTransportationMode}
+                onToggle={() => setSupply("showTransportationMode", !supplyInfo?.showTransportationMode)}
+              >
+                <Input placeholder="e.g. Road, Rail" value={supplyInfo?.transportationMode || ""}
+                  onChange={e => setSupply("transportationMode", e.target.value)} className="h-9 text-sm" />
+              </SupplyField>
+              <SupplyField
+                label="Vehicle Number"
+                show={supplyInfo?.showVehicleNumber}
+                onToggle={() => setSupply("showVehicleNumber", !supplyInfo?.showVehicleNumber)}
+              >
+                <Input placeholder="e.g. MH 01 AB 1234" value={supplyInfo?.vehicleNumber || ""}
+                  onChange={e => setSupply("vehicleNumber", e.target.value)} className="h-9 text-sm" />
+              </SupplyField>
+            </div>
           </div>
-        </div>
 
-        {/* Challan Date */}
-        <div
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            padding: "10px",
-            borderRadius: "8px",
-            marginBottom: "15px",
-            border: "2px solid #1890ff",
-          }}
-        >
-          <Row gutter={12}>
-            <Col span={12}>
-              <div style={{ marginBottom: "8px" }}>
-                <label
-                  style={{
-                    fontWeight: "bold",
-                    display: "block",
-                    marginBottom: "3px",
-                    fontSize: "12px",
-                  }}
-                >
-                  Email Address
-                </label>
-                <Input
-                  placeholder="Enter email address"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
-                  type="email"
-                  size="middle"
-                  style={{ fontSize: "14px" }}
-                />
+          {/* Receiver Details */}
+          <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <User className="h-4 w-4 text-blue-600" />
+              <h4 className="text-sm font-semibold text-blue-800">Details of Receiver</h4>
+              <Badge variant="outline" className="text-[10px] text-blue-500 border-blue-200">Auto-filled</Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Receiver Name</Label>
+                <Input value={clientInfo.name} readOnly className="h-9 text-sm" />
               </div>
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: "8px" }}>
-                <label
-                  style={{
-                    fontWeight: "bold",
-                    display: "block",
-                    marginBottom: "3px",
-                    fontSize: "12px",
-                  }}
-                >
-                  Challan Date
-                </label>
-                <DatePicker
-                  onChange={(date) => setQuotationDate(date)}
-                  value={quotationDate}
-                  size="middle"
-                  style={{ width: "100%" }}
-                />
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Receiver Company</Label>
+                <Input value={clientInfo.firm} readOnly className="h-9 text-sm" />
               </div>
-            </Col>
-          </Row>
-        </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Receiver Address</Label>
+              <Input value={clientInfo.address} readOnly className="h-9 text-sm" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">State</Label>
+                <Input value={clientInfo.state} readOnly className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Pin Code</Label>
+                <Input value={clientInfo.pinCode} readOnly className="h-9 text-sm" />
+              </div>
+            </div>
+          </div>
 
-        {/* Items Section - Simplified for overlay */}
-        <div
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            padding: "15px",
-            borderRadius: "8px",
-            marginBottom: "20px",
-            border: "2px solid #52c41a",
-          }}
-        >
-          <h4 style={{ color: "#52c41a", marginBottom: "15px" }}>
-            Challan Items (Total: ₹{totalAmount.toFixed(2)})
-          </h4>
+          {/* Shipped To / Consignee */}
+          <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Truck className="h-4 w-4 text-orange-600" />
+              <h4 className="text-sm font-semibold text-orange-800">Details of Consignee / Shipped To</h4>
+              <span className="text-[10px] text-muted-foreground">(leave blank if same as Billed To)</span>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Name / Firm</Label>
+              <Input placeholder="Consignee name or firm" value={shippedToInfo?.name || ""}
+                onChange={e => setShippedToInfo((prev: any) => ({ ...prev, name: e.target.value }))} className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Shipping Address</Label>
+              <Input placeholder="Delivery / shipping address" value={shippedToInfo?.address || ""}
+                onChange={e => setShippedToInfo((prev: any) => ({ ...prev, address: e.target.value }))} className="h-9 text-sm" />
+            </div>
+          </div>
 
-          {items.map((item: any, index: number) => (
-            <div
-              key={item.key}
-              style={{
-                display: "flex",
-                gap: "10px",
-                marginBottom: "10px",
-                alignItems: "center",
-                padding: "10px",
-                backgroundColor: "rgba(255, 240, 245, 0.8)",
-                borderRadius: "4px",
-              }}
-            >
-              <span style={{ minWidth: "30px", fontWeight: "bold" }}>
-                {index + 1}.
-              </span>
-              <Input
-                placeholder="Item description"
-                value={item.item}
-                onChange={(e) =>
-                  handleCellChange(item.key, "item", e.target.value)
-                }
-                style={{ flex: 3 }}
-              />
-              <Input
-                placeholder="HSN Code"
-                value={item.hsnCode || ""}
-                onChange={(e) =>
-                  handleCellChange(item.key, "hsnCode", e.target.value)
-                }
-                style={{ flex: 0.8 }}
-              />
-              <Input
-                placeholder="Rate"
-                value={item.rate}
-                onChange={(e) =>
-                  handleCellChange(item.key, "rate", e.target.value)
-                }
-                prefix="₹"
-                style={{ flex: 1 }}
-              />
-              <Input
-                placeholder="Qty"
-                type="number"
-                value={item.qty}
-                onChange={(e) =>
-                  handleCellChange(item.key, "qty", e.target.value)
-                }
-                style={{ flex: 1 }}
-              />
-              <span
-                style={{
-                  minWidth: "80px",
-                  fontWeight: "bold",
-                  color: "#1890ff",
-                }}
-              >
-                ₹{(item.rate * item.qty).toFixed(2)}
-              </span>
-              <Button
-                danger
-                size="small"
-                onClick={() => handleDeleteItem(item.key)}
-              >
-                ×
+          {/* Email & Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Email Address</Label>
+              <Input type="email" placeholder="client@email.com" value={recipientEmail}
+                onChange={e => setRecipientEmail(e.target.value)} className="h-9 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Challan Date</Label>
+              <DatePicker value={quotationDate} onChange={setQuotationDate} />
+            </div>
+          </div>
+
+          {/* Items Section */}
+          <div className="rounded-xl border border-sky-200 bg-sky-50/40 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-sky-800">Challan Items</h4>
+                <Badge className="text-xs bg-sky-100 text-sky-700 border-sky-200">
+                  ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </Badge>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleAddItem}
+                className="h-8 text-xs gap-1.5 border-sky-300 text-sky-700 hover:bg-sky-100">
+                <Plus className="h-3.5 w-3.5" /> Add Item
               </Button>
             </div>
-          ))}
-        </div>
 
-        {/* Action Buttons */}
-        <div style={{ textAlign: "center" }}>
-          <Space size="large">
-            <Button
-              type="primary"
-              size="large"
-              onClick={handleAddItem}
-              style={{ backgroundColor: "#1890ff", borderColor: "#1890ff" }}
-            >
-              Add Item
+            <div className="hidden sm:grid grid-cols-[1.5rem_3fr_1fr_1fr_1fr_80px_32px] gap-2 px-2 mb-1.5">
+              {["#", "Description", "HSN", "Rate (₹)", "Qty", "Amount", ""].map(h => (
+                <span key={h} className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{h}</span>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              {items.map((item: any, index: number) => (
+                <div key={item.key} className="grid grid-cols-[1.5rem_3fr_1fr_1fr_1fr_80px_32px] gap-2 items-center bg-white rounded-lg px-2 py-2 border border-sky-100 shadow-sm">
+                  <span className="text-xs font-bold text-muted-foreground text-center">{index + 1}</span>
+                  <Input placeholder="Item description" value={item.item}
+                    onChange={e => handleCellChange(item.key, "item", e.target.value)} className="h-8 text-sm" />
+                  <Input placeholder="HSN" value={item.hsnCode || ""}
+                    onChange={e => handleCellChange(item.key, "hsnCode", e.target.value)} className="h-8 text-sm" />
+                  <Input placeholder="0.00" value={item.rate || ""}
+                    onChange={e => handleCellChange(item.key, "rate", e.target.value)} className="h-8 text-sm" />
+                  <Input placeholder="0" type="number" value={item.qty || ""}
+                    onChange={e => handleCellChange(item.key, "qty", e.target.value)} className="h-8 text-sm" />
+                  <span className="text-sm font-semibold text-blue-600 text-right">
+                    ₹{(item.rate * item.qty).toFixed(2)}
+                  </span>
+                  <button onClick={() => handleDeleteItem(item.key)}
+                    className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-red-50 hover:text-red-500 text-muted-foreground transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+              {items.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-4">No items added yet.</p>
+              )}
+            </div>
+
+            {items.length > 0 && (
+              <div className="mt-3 flex justify-end">
+                <div className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-semibold">
+                  Total: ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3 pt-1">
+            <Button variant="success" onClick={handleSendEmail} className="flex-1 sm:flex-none gap-2">
+              <Mail className="h-4 w-4" /> Send Email
             </Button>
-            <Button
-              type="primary"
-              size="large"
-              icon={<MailOutlined />}
-              onClick={handleSendEmail}
-              style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
-            >
-              Send Email
+            <Button variant="blue" onClick={downloadPDF} className="flex-1 sm:flex-none gap-2">
+              <Download className="h-4 w-4" /> Download PDF
             </Button>
-            <Button
-              type="primary"
-              size="large"
-              icon={<DownloadOutlined />}
-              onClick={downloadPDF}
-              style={{ backgroundColor: "#722ed1", borderColor: "#722ed1" }}
-            >
-              Download PDF
-            </Button>
-          </Space>
-        </div>
-      </div>
+          </div>
+        </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function SupplyField({ label, show, onToggle, children }: {
+  label: string; show: boolean; onToggle: () => void; children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        <button onClick={onToggle} className={cn(
+          "flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded transition-colors",
+          show ? "text-emerald-600 hover:bg-emerald-50" : "text-muted-foreground hover:bg-muted"
+        )}>
+          {show ? <Eye className="h-2.5 w-2.5" /> : <EyeOff className="h-2.5 w-2.5" />}
+          {show ? "visible" : "hidden"}
+        </button>
+      </div>
+      {children}
     </div>
   );
 }

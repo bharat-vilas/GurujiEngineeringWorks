@@ -28,9 +28,9 @@ export const formatSerialNumber = (
   const num = typeof serialNumber === "string" ? parseInt(serialNumber) || 0 : serialNumber;
   const currentYear = new Date().getFullYear();
   const typeCode = {
-    quotation: "q",
-    billing: "b",
-    challan: "c",
+    quotation: "Q",
+    billing: "B",
+    challan: "C",
   }[type];
 
   const formattedSerial = num.toString().padStart(4, "0");

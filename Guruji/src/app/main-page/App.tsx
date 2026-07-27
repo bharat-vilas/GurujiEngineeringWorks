@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { message } from "antd";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import html2pdf from "html2pdf.js";
@@ -14,6 +14,10 @@ import Sidebar from "../../component/Sidebar";
 import Header from "../../component/Header";
 import RegisterClient from "../../component/RegisterClient";
 import Mail from "../../component/Mail";
+import Employees from "../../component/Employees";
+import Attendance from "../../component/Attendance";
+import Financials from "../../component/Financials";
+import Home from "../../component/Home";
 import ResizableSplitPane from "../../component/ResizableSplitPane";
 import { authUtils } from "../../utils/auth";
 import { api } from "../../utils/api";
@@ -24,23 +28,19 @@ import {
 
 const App = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("quotation");
+  const [activeTab, setActiveTab] = useState("home");
 
   // Check for email auth callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const emailAuth = params.get("email_auth");
     if (emailAuth === "success") {
-      message.success(
-        "Email authentication successful! You can now send emails."
-      );
+      toast.success("Email authentication successful! You can now send emails.");
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (emailAuth === "error") {
       const errorMsg = params.get("message");
-      message.error(
-        errorMsg || "Email authentication failed. Please try again."
-      );
+      toast.error(errorMsg || "Email authentication failed. Please try again.");
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -59,7 +59,7 @@ const App = () => {
       console.error("Logout error:", error);
     } finally {
       authUtils.clearAuth();
-      message.success("Logged out successfully!");
+      toast.success("Logged out successfully!");
       navigate("/login");
     }
   };
@@ -67,6 +67,13 @@ const App = () => {
   const [clientInfo, setClientInfo] = useState({
     name: "",
     firm: "",
+    address: "",
+    gstin: "",
+    state: "",
+    pinCode: "",
+  });
+  const [shippedToInfo, setShippedToInfo] = useState({
+    name: "",
     address: "",
   });
   const [recipientEmail, setRecipientEmail] = useState("");
@@ -95,6 +102,9 @@ const App = () => {
   // Load serial numbers from API on component mount
   useEffect(() => {
     const loadSerialNumbers = async () => {
+      const up = (s: string | null, type: "quotation" | "billing" | "challan") =>
+        (s || formatSerialNumber(0, type)).toUpperCase();
+
       try {
         const response = await api.get("/api/serial-numbers");
         if (response.ok) {
@@ -121,15 +131,9 @@ const App = () => {
               );
               if (initResponse.ok) {
                 const initData = await initResponse.json();
-                setQuotationSerial(
-                  initData.quotation || formatSerialNumber(0, "quotation")
-                );
-                setBillingSerial(
-                  initData.billing || formatSerialNumber(0, "billing")
-                );
-                setChallanSerial(
-                  initData.challan || formatSerialNumber(0, "challan")
-                );
+                setQuotationSerial(up(initData.quotation, "quotation"));
+                setBillingSerial(up(initData.billing, "billing"));
+                setChallanSerial(up(initData.challan, "challan"));
                 return;
               }
             } catch (initError) {
@@ -137,28 +141,20 @@ const App = () => {
             }
           }
 
-          setQuotationSerial(
-            data.quotation || formatSerialNumber(0, "quotation")
-          );
-          setBillingSerial(data.billing || formatSerialNumber(0, "billing"));
-          setChallanSerial(data.challan || formatSerialNumber(0, "challan"));
+          setQuotationSerial(up(data.quotation, "quotation"));
+          setBillingSerial(up(data.billing, "billing"));
+          setChallanSerial(up(data.challan, "challan"));
         } else {
           console.error("Failed to load serial numbers");
-          const storedQ = localStorage.getItem("quotationSerial");
-          const storedB = localStorage.getItem("billingSerial");
-          const storedC = localStorage.getItem("challanSerial");
-          setQuotationSerial(storedQ || formatSerialNumber(0, "quotation"));
-          setBillingSerial(storedB || formatSerialNumber(0, "billing"));
-          setChallanSerial(storedC || formatSerialNumber(0, "challan"));
+          setQuotationSerial(up(localStorage.getItem("quotationSerial"), "quotation"));
+          setBillingSerial(up(localStorage.getItem("billingSerial"), "billing"));
+          setChallanSerial(up(localStorage.getItem("challanSerial"), "challan"));
         }
       } catch (error) {
         console.error("Error loading serial numbers:", error);
-        const storedQ = localStorage.getItem("quotationSerial");
-        const storedB = localStorage.getItem("billingSerial");
-        const storedC = localStorage.getItem("challanSerial");
-        setQuotationSerial(storedQ || formatSerialNumber(0, "quotation"));
-        setBillingSerial(storedB || formatSerialNumber(0, "billing"));
-        setChallanSerial(storedC || formatSerialNumber(0, "challan"));
+        setQuotationSerial(up(localStorage.getItem("quotationSerial"), "quotation"));
+        setBillingSerial(up(localStorage.getItem("billingSerial"), "billing"));
+        setChallanSerial(up(localStorage.getItem("challanSerial"), "challan"));
       }
     };
 
@@ -201,8 +197,8 @@ const App = () => {
 
     const opt = {
       filename: `Quotation-${currentSerialForPDF}.pdf`,
-      image: { type: "jpeg", quality: 1 },
-      html2canvas: { scale: 4 },
+      image: { type: "jpeg", quality: 0.82 },
+      html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["avoid-all", "css", "legacy"] },
     };
@@ -233,6 +229,19 @@ const App = () => {
           setQuotationSerial(newSerial);
           localStorage.setItem("quotationSerial", newSerial);
         }
+        try {
+          const total = items.reduce((s: number, i: any) => s + i.rate * i.qty, 0);
+          await api.post("/api/document-queue", {
+            type: "quotation",
+            documentNumber: currentSerialForPDF,
+            clientName: clientInfo.name || "—",
+            clientFirm: clientInfo.firm || "",
+            amount: total,
+            documentDate: quotationDate ? quotationDate.toDate() : new Date(),
+          });
+        } catch (e) {
+          console.error("Queue error:", e);
+        }
       });
   };
 
@@ -242,8 +251,8 @@ const App = () => {
 
     const opt = {
       filename: `Invoice-${currentSerialForPDF}.pdf`,
-      image: { type: "jpeg", quality: 1 },
-      html2canvas: { scale: 4 },
+      image: { type: "jpeg", quality: 0.82 },
+      html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["avoid-all", "css", "legacy"] },
     };
@@ -274,6 +283,20 @@ const App = () => {
           setBillingSerial(newSerial);
           localStorage.setItem("billingSerial", newSerial);
         }
+        try {
+          const total = items.reduce((s: number, i: any) => s + i.rate * i.qty, 0);
+          const gst = total * 0.18;
+          await api.post("/api/document-queue", {
+            type: "billing",
+            documentNumber: currentSerialForPDF,
+            clientName: clientInfo.name || "—",
+            clientFirm: clientInfo.firm || "",
+            amount: parseFloat((total + gst).toFixed(2)),
+            documentDate: quotationDate ? quotationDate.toDate() : new Date(),
+          });
+        } catch (e) {
+          console.error("Queue error:", e);
+        }
       });
   };
 
@@ -283,8 +306,8 @@ const App = () => {
 
     const opt = {
       filename: `Challan-${currentSerialForPDF}.pdf`,
-      image: { type: "jpeg", quality: 1 },
-      html2canvas: { scale: 4 },
+      image: { type: "jpeg", quality: 0.82 },
+      html2canvas: { scale: 2 },
       jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
       pagebreak: { mode: ["avoid-all", "css", "legacy"] },
     };
@@ -315,6 +338,20 @@ const App = () => {
           setChallanSerial(newSerial);
           localStorage.setItem("challanSerial", newSerial);
         }
+        try {
+          const total = items.reduce((s: number, i: any) => s + i.rate * i.qty, 0);
+          const gst = total * 0.18;
+          await api.post("/api/document-queue", {
+            type: "challan",
+            documentNumber: currentSerialForPDF,
+            clientName: clientInfo.name || "—",
+            clientFirm: clientInfo.firm || "",
+            amount: parseFloat((total + gst).toFixed(2)),
+            documentDate: quotationDate ? quotationDate.toDate() : new Date(),
+          });
+        } catch (e) {
+          console.error("Queue error:", e);
+        }
       });
   };
 
@@ -334,6 +371,12 @@ const App = () => {
         return "bg-blue-50";
       case "register-client":
         return "bg-orange-50";
+      case "employees":
+        return "bg-rose-50";
+      case "financials":
+        return "bg-violet-50";
+      case "home":
+        return "bg-amber-50";
       default:
         return "bg-gray-50";
     }
@@ -353,6 +396,20 @@ const App = () => {
 
         <main className="flex-1 lg:ml-0 overflow-hidden h-full">
           <AnimatePresence mode="wait">
+            {activeTab === "home" && (
+              <motion.div
+                key="home"
+                variants={contentVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                className="w-full h-full bg-amber-50"
+              >
+                <Home />
+              </motion.div>
+            )}
+
             {activeTab === "quotation" && (
               <motion.div
                 key="quotation"
@@ -422,6 +479,8 @@ const App = () => {
                       supplyInfo={supplyInfo}
                       setSupplyInfo={setSupplyInfo}
                       billingSerial={billingSerial}
+                      shippedToInfo={shippedToInfo}
+                      setShippedToInfo={setShippedToInfo}
                     />
                   }
                   right={
@@ -432,6 +491,7 @@ const App = () => {
                       items={items}
                       supplyInfo={supplyInfo}
                       billingSerial={billingSerial}
+                      shippedToInfo={shippedToInfo}
                     />
                   }
                 />
@@ -466,6 +526,8 @@ const App = () => {
                       supplyInfo={supplyInfo}
                       setSupplyInfo={setSupplyInfo}
                       challanSerial={challanSerial}
+                      shippedToInfo={shippedToInfo}
+                      setShippedToInfo={setShippedToInfo}
                     />
                   }
                   right={
@@ -476,6 +538,7 @@ const App = () => {
                       items={items}
                       supplyInfo={supplyInfo}
                       challanSerial={challanSerial}
+                      shippedToInfo={shippedToInfo}
                     />
                   }
                 />
@@ -507,6 +570,48 @@ const App = () => {
                 className="w-full h-full bg-indigo-50"
               >
                 <Mail />
+              </motion.div>
+            )}
+
+            {activeTab === "employees" && (
+              <motion.div
+                key="employees"
+                variants={contentVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                className="w-full h-full bg-rose-50"
+              >
+                <Employees />
+              </motion.div>
+            )}
+
+            {activeTab === "attendance" && (
+              <motion.div
+                key="attendance"
+                variants={contentVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                className="w-full h-full bg-teal-50"
+              >
+                <Attendance />
+              </motion.div>
+            )}
+
+            {activeTab === "financials" && (
+              <motion.div
+                key="financials"
+                variants={contentVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                className="w-full h-full bg-violet-50"
+              >
+                <Financials />
               </motion.div>
             )}
           </AnimatePresence>

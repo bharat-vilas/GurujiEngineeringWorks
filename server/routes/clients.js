@@ -38,7 +38,7 @@ router.get("/:id", authenticateToken, async (req, res) => {
 // POST /api/clients - Create a new client
 router.post("/", authenticateToken, async (req, res) => {
   try {
-    const { name, firm, address, email, phone, gstin } = req.body;
+    const { name, firm, address, email, phone, gstin, state, pinCode } = req.body;
 
     if (!name || !firm || !address) {
       return res.status(400).json({
@@ -53,6 +53,8 @@ router.post("/", authenticateToken, async (req, res) => {
       email,
       phone,
       gstin,
+      state,
+      pinCode,
     });
 
     await newClient.save();
@@ -73,7 +75,7 @@ router.post("/", authenticateToken, async (req, res) => {
 // PUT /api/clients/:id - Update a client
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
-    const { name, firm, address, email, phone, gstin } = req.body;
+    const { name, firm, address, email, phone, gstin, state, pinCode } = req.body;
 
     const client = await Client.findByIdAndUpdate(
       req.params.id,
@@ -84,6 +86,8 @@ router.put("/:id", authenticateToken, async (req, res) => {
         email,
         phone,
         gstin,
+        state,
+        pinCode,
         updatedAt: Date.now(),
       },
       { new: true, runValidators: true }

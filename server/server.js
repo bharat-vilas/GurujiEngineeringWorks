@@ -10,6 +10,10 @@ import authRoutes from "./routes/auth.js";
 import serialNumberRoutes from "./routes/serialNumbers.js";
 import clientRoutes from "./routes/clients.js";
 import emailRoutes from "./routes/email.js";
+import employeeRoutes from "./routes/employees.js";
+import attendanceRoutes from "./routes/attendance.js";
+import transactionRoutes from "./routes/transactions.js";
+import documentQueueRoutes from "./routes/documentQueue.js";
 
 const app = express();
 /* ────────────────────────────────── Middlewares ────────────────────────────────── */
@@ -129,3 +133,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/serial-numbers", serialNumberRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/email", emailRoutes);
+app.use("/api/employees", employeeRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/document-queue", documentQueueRoutes);

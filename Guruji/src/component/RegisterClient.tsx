@@ -1,8 +1,18 @@
 import { useState, useEffect } from "react";
-import { Form, Input, Button, Card, message, Space, Popconfirm, Empty } from "antd";
-import { SaveOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
-import { api } from "../utils/api";
+import { toast } from "sonner";
+import { Save, Trash2, Pencil, X, UserPlus, Users, Building2, MapPin, Mail, Phone, Hash } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "../components/ui/alert-dialog";
 import ResizableSplitPane from "./ResizableSplitPane";
+import { api } from "../utils/api";
 
 interface Client {
   _id?: string;
@@ -12,262 +22,268 @@ interface Client {
   email?: string;
   phone?: string;
   gstin?: string;
+  state?: string;
+  pinCode?: string;
 }
 
+const emptyForm: Omit<Client, "_id"> = { name: "", firm: "", address: "", email: "", phone: "", gstin: "", state: "", pinCode: "" };
+
 const RegisterClient = () => {
-  const [form] = Form.useForm();
+  const [form, setForm] = useState(emptyForm);
+  const [errors, setErrors] = useState<Partial<typeof emptyForm>>({});
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Load clients on component mount
-  useEffect(() => {
-    loadClients();
-  }, []);
+  useEffect(() => { loadClients(); }, []);
 
   const loadClients = async () => {
     try {
       const response = await api.get("/api/clients");
-      if (response.ok) {
-        const data = await response.json();
-        setClients(data);
-      } else {
-        message.error("Failed to load clients");
-      }
-    } catch (error) {
-      console.error("Error loading clients:", error);
-      message.error("Error loading clients");
+      if (response.ok) setClients(await response.json());
+      else toast.error("Failed to load clients");
+    } catch {
+      toast.error("Error loading clients");
     }
   };
 
-  const onFinish = async (values: Client) => {
+  const validate = (): boolean => {
+    const errs: Partial<typeof emptyForm> = {};
+    if (!form.name.trim()) errs.name = "Client name is required";
+    if (!form.firm.trim()) errs.firm = "Firm name is required";
+    if (!form.address.trim()) errs.address = "Address is required";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
     setLoading(true);
     try {
-      if (editingId) {
-        // Update existing client
-        const response = await api.put(`/api/clients/${editingId}`, values);
-        if (response.ok) {
-          message.success("Client updated successfully!");
-          form.resetFields();
-          setEditingId(null);
-          loadClients();
-        } else {
-          const errorData = await response.json();
-          message.error(errorData.message || "Failed to update client");
-        }
-      } else {
-        // Create new client
-        const response = await api.post("/api/clients", values);
-        if (response.ok) {
-          message.success("Client registered successfully!");
-          form.resetFields();
-          loadClients();
-        } else {
-          const errorData = await response.json();
-          message.error(errorData.message || "Failed to register client");
-        }
-      }
-    } catch (error) {
-      console.error("Error saving client:", error);
-      message.error("An error occurred. Please try again.");
+      const payload = { name: form.name, firm: form.firm, address: form.address, email: form.email, phone: form.phone, gstin: form.gstin, state: form.state, pinCode: form.pinCode };
+      const response = editingId
+        ? await api.put(`/api/clients/${editingId}`, payload)
+        : await api.post("/api/clients", payload);
+      const data = await response.json();
+      if (!response.ok) { toast.error(data.message || "Failed to save client"); return; }
+      toast.success(editingId ? "Client updated successfully!" : "Client registered successfully!");
+      setForm(emptyForm);
+      setEditingId(null);
+      loadClients();
+    } catch {
+      toast.error("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleEdit = (client: Client) => {
-    form.setFieldsValue(client);
+    setForm({ name: client.name, firm: client.firm, address: client.address, email: client.email || "", phone: client.phone || "", gstin: client.gstin || "", state: client.state || "", pinCode: client.pinCode || "" });
     setEditingId(client._id || null);
+    setErrors({});
   };
 
   const handleDelete = async (id: string) => {
     try {
       const response = await api.delete(`/api/clients/${id}`);
-      if (response.ok) {
-        message.success("Client deleted successfully!");
-        loadClients();
-      } else {
-        message.error("Failed to delete client");
-      }
-    } catch (error) {
-      console.error("Error deleting client:", error);
-      message.error("Error deleting client");
+      if (response.ok) { toast.success("Client deleted."); loadClients(); }
+      else toast.error("Failed to delete client");
+    } catch {
+      toast.error("Error deleting client");
     }
   };
 
-  const handleCancel = () => {
-    form.resetFields();
-    setEditingId(null);
-  };
+  const handleCancel = () => { setForm(emptyForm); setEditingId(null); setErrors({}); };
+
+  const field = (key: keyof typeof emptyForm) => ({
+    value: form[key] || "",
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm(prev => ({ ...prev, [key]: e.target.value })),
+  });
 
   return (
     <div className="h-full p-4 overflow-hidden">
       <ResizableSplitPane
         defaultLeftWidth={50}
         left={
-          <div className="h-full overflow-y-auto custom-scrollbar">
-            <Card className="h-full shadow-sm">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                {editingId ? "Edit Client" : "Register New Client"}
-              </h2>
-              <Form
-                form={form}
-                layout="vertical"
-                onFinish={onFinish}
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Form.Item
-                    name="name"
-                    label="Client Name"
-                    rules={[{ required: true, message: "Please enter client name" }]}
-                  >
-                    <Input placeholder="Enter client name" size="large" />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="firm"
-                    label="Firm Name"
-                    rules={[{ required: true, message: "Please enter firm name" }]}
-                  >
-                    <Input placeholder="Enter firm name" size="large" />
-                  </Form.Item>
+          <div className="h-full overflow-y-auto custom-scrollbar pr-1">
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-orange-100">
+                    <UserPlus className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <CardTitle className="text-base font-bold">
+                    {editingId ? "Edit Client" : "Register New Client"}
+                  </CardTitle>
+                  {editingId && <Badge variant="warning" className="ml-auto text-xs">Editing</Badge>}
                 </div>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="name">Client Name *</Label>
+                      <Input id="name" placeholder="Enter client name" {...field("name")}
+                        className={errors.name ? "border-destructive" : ""} />
+                      {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="firm">Firm Name *</Label>
+                      <Input id="firm" placeholder="Enter firm name" {...field("firm")}
+                        className={errors.firm ? "border-destructive" : ""} />
+                      {errors.firm && <p className="text-xs text-destructive">{errors.firm}</p>}
+                    </div>
+                  </div>
 
-                <Form.Item
-                  name="address"
-                  label="Address"
-                  rules={[{ required: true, message: "Please enter address" }]}
-                >
-                  <Input.TextArea
-                    placeholder="Enter complete address"
-                    rows={3}
-                    size="large"
-                  />
-                </Form.Item>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="address">Address *</Label>
+                    <Textarea id="address" placeholder="Enter complete address" rows={3}
+                      {...field("address")} className={errors.address ? "border-destructive" : ""} />
+                    {errors.address && <p className="text-xs text-destructive">{errors.address}</p>}
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Form.Item name="email" label="Email">
-                    <Input
-                      type="email"
-                      placeholder="Enter email address"
-                      size="large"
-                    />
-                  </Form.Item>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" placeholder="client@email.com" {...field("email")} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input id="phone" placeholder="+91 98765 43210" {...field("phone")} />
+                    </div>
+                  </div>
 
-                  <Form.Item name="phone" label="Phone">
-                    <Input placeholder="Enter phone number" size="large" />
-                  </Form.Item>
-                </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="gstin">GSTIN</Label>
+                    <Input id="gstin" placeholder="Enter GSTIN number" {...field("gstin")} />
+                  </div>
 
-                <Form.Item name="gstin" label="GSTIN">
-                  <Input placeholder="Enter GSTIN" size="large" />
-                </Form.Item>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="state">State</Label>
+                      <Input id="state" placeholder="e.g. Uttar Pradesh" {...field("state")} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pinCode">Pin Code</Label>
+                      <Input id="pinCode" placeholder="e.g. 201010" {...field("pinCode")} />
+                    </div>
+                  </div>
 
-                <Form.Item>
-                  <Space>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      icon={<SaveOutlined />}
-                      loading={loading}
-                      size="large"
-                      className="bg-primary hover:bg-primary/90"
-                    >
+                  <div className="flex gap-3 pt-2">
+                    <Button type="submit" loading={loading} className="flex-1 gap-2">
+                      <Save className="h-4 w-4" />
                       {editingId ? "Update Client" : "Register Client"}
                     </Button>
                     {editingId && (
-                      <Button size="large" onClick={handleCancel}>
-                        Cancel
+                      <Button type="button" variant="outline" onClick={handleCancel} className="gap-2">
+                        <X className="h-4 w-4" /> Cancel
                       </Button>
                     )}
-                  </Space>
-                </Form.Item>
-              </Form>
+                  </div>
+                </form>
+              </CardContent>
             </Card>
           </div>
         }
         right={
-          <div className="h-full overflow-y-auto custom-scrollbar">
-            <Card 
-              title="Registered Clients" 
-              className="h-full shadow-sm"
-            >
-              {clients.length === 0 ? (
-                <Empty description="No clients registered yet" />
-              ) : (
-                <div className="space-y-2">
-                  {clients.map((client) => (
-                    <Card
-                      key={client._id}
-                      className="shadow-sm hover:shadow-md transition-shadow bg-orange-50 border-orange-100"
-                      size="small"
-                      bodyStyle={{ padding: "12px", position: "relative" }}
-                    >
-                      {/* Action Buttons - Top Right */}
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <Button
-                          type="primary"
-                          shape="circle"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => handleEdit(client)}
-                          className="bg-blue-500 hover:bg-blue-600 border-blue-500"
-                          title="Edit"
-                        />
-                        <Popconfirm
-                          title="Are you sure you want to delete this client?"
-                          onConfirm={() => client._id && handleDelete(client._id)}
-                          okText="Yes"
-                          cancelText="No"
-                        >
-                          <Button
-                            type="primary"
-                            shape="circle"
-                            size="small"
-                            danger
-                            icon={<DeleteOutlined />}
-                            className="bg-red-500 hover:bg-red-600 border-red-500"
-                            title="Delete"
-                          />
-                        </Popconfirm>
-                      </div>
-                      
-                      <div className="space-y-1 pr-16">
-                        <div className="flex items-start gap-2">
-                          <span className="text-xs font-semibold text-gray-500 min-w-[60px]">Name:</span>
-                          <span className="text-sm font-medium text-gray-800">{client.name}</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <span className="text-xs font-semibold text-gray-500 min-w-[60px]">Firm:</span>
-                          <span className="text-sm text-gray-700">{client.firm}</span>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <span className="text-xs font-semibold text-gray-500 min-w-[60px]">Address:</span>
-                          <span className="text-sm text-gray-700">{client.address}</span>
-                        </div>
-                        {client.email && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-xs font-semibold text-gray-500 min-w-[60px]">Email:</span>
-                            <span className="text-sm text-gray-700">{client.email}</span>
-                          </div>
-                        )}
-                        {client.phone && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-xs font-semibold text-gray-500 min-w-[60px]">Phone:</span>
-                            <span className="text-sm text-gray-700">{client.phone}</span>
-                          </div>
-                        )}
-                        {client.gstin && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-xs font-semibold text-gray-500 min-w-[60px]">GSTIN:</span>
-                            <span className="text-sm text-gray-700">{client.gstin}</span>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
+          <div className="h-full overflow-y-auto custom-scrollbar pl-1">
+            <Card className="shadow-sm h-full">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-100">
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-base font-bold">Registered Clients</CardTitle>
+                  <Badge variant="secondary" className="ml-auto">{clients.length}</Badge>
                 </div>
-              )}
+              </CardHeader>
+              <CardContent>
+                {clients.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="p-4 rounded-full bg-muted mb-3">
+                      <Users className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground">No clients registered yet</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">Add your first client using the form on the left</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {clients.map(client => (
+                      <div key={client._id}
+                        className="group relative rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50 to-amber-50/40 p-4 hover:shadow-md transition-all duration-200 hover:border-orange-200">
+                        {/* Action buttons */}
+                        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button size="icon" variant="outline"
+                            className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                            onClick={() => handleEdit(client)} title="Edit">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="outline"
+                                className="h-7 w-7 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600" title="Delete">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Client</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete <strong>{client.name}</strong> from <strong>{client.firm}</strong>? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => client._id && handleDelete(client._id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+
+                        <div className="space-y-2 pr-16">
+                          <div>
+                            <p className="font-semibold text-foreground text-sm">{client.name}</p>
+                            <p className="text-xs text-muted-foreground">{client.firm}</p>
+                          </div>
+
+                          <div className="space-y-1">
+                            {client.address && (
+                              <div className="flex items-start gap-1.5">
+                                <MapPin className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                <span className="text-xs text-muted-foreground">{client.address}</span>
+                              </div>
+                            )}
+                            {client.email && (
+                              <div className="flex items-center gap-1.5">
+                                <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                <span className="text-xs text-muted-foreground">{client.email}</span>
+                              </div>
+                            )}
+                            {client.phone && (
+                              <div className="flex items-center gap-1.5">
+                                <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                <span className="text-xs text-muted-foreground">{client.phone}</span>
+                              </div>
+                            )}
+                            {client.gstin && (
+                              <div className="flex items-center gap-1.5">
+                                <Hash className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                <span className="text-xs font-mono text-muted-foreground">{client.gstin}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </div>
         }
@@ -277,4 +293,3 @@ const RegisterClient = () => {
 };
 
 export default RegisterClient;
-

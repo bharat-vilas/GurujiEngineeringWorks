@@ -2,15 +2,15 @@
 // Format: YEAR/TYPE/SERIAL (e.g., 2025/q/0001)
 
 const TYPE_CODES = {
-  quotation: "q",
-  billing: "b",
-  challan: "c",
+  quotation: "Q",
+  billing: "B",
+  challan: "C",
 };
 
 const TYPE_FROM_CODE = {
-  q: "quotation",
-  b: "billing",
-  c: "challan",
+  Q: "quotation",
+  B: "billing",
+  C: "challan",
 };
 
 // Format a number into serial number string

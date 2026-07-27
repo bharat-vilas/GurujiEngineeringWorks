@@ -1,537 +1,309 @@
-import { Card, Table, Typography } from "antd";
 import React from "react";
 import "./componentCSS.css";
 import { COMPANY_CONFIG } from "../config/companyConfig";
 import { formatSerialNumber } from "../utils/serialNumberFormatter";
 
-// Function to convert number to words
 function numberToWords(num: number): string {
-  const ones = [
-    "",
-    "One",
-    "Two",
-    "Three",
-    "Four",
-    "Five",
-    "Six",
-    "Seven",
-    "Eight",
-    "Nine",
-  ];
-  const tens = [
-    "",
-    "",
-    "Twenty",
-    "Thirty",
-    "Forty",
-    "Fifty",
-    "Sixty",
-    "Seventy",
-    "Eighty",
-    "Ninety",
-  ];
-  const teens = [
-    "Ten",
-    "Eleven",
-    "Twelve",
-    "Thirteen",
-    "Fourteen",
-    "Fifteen",
-    "Sixteen",
-    "Seventeen",
-    "Eighteen",
-    "Nineteen",
-  ];
-
+  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
   function convertLessThanOneThousand(n: number): string {
     if (n === 0) return "";
-
     if (n < 10) return ones[n];
-
     if (n < 20) return teens[n - 10];
-
-    if (n < 100) {
-      return (
-        tens[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + ones[n % 10] : "")
-      );
-    }
-
-    if (n < 1000) {
-      return (
-        ones[Math.floor(n / 100)] +
-        " Hundred" +
-        (n % 100 !== 0 ? " and " + convertLessThanOneThousand(n % 100) : "")
-      );
-    }
-
-    return "";
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + ones[n % 10] : "");
+    return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 !== 0 ? " and " + convertLessThanOneThousand(n % 100) : "");
   }
-
   function convert(n: number): string {
     if (n === 0) return "Zero";
-
     const crore = Math.floor(n / 10000000);
     const lakh = Math.floor((n % 10000000) / 100000);
     const thousand = Math.floor((n % 100000) / 1000);
     const remainder = n % 1000;
-
     let result = "";
-
-    if (crore > 0) {
-      result += convertLessThanOneThousand(crore) + " Crore ";
-    }
-
-    if (lakh > 0) {
-      result += convertLessThanOneThousand(lakh) + " Lakh ";
-    }
-
-    if (thousand > 0) {
-      result += convertLessThanOneThousand(thousand) + " Thousand ";
-    }
-
-    if (remainder > 0) {
-      result += convertLessThanOneThousand(remainder);
-    }
-
+    if (crore > 0) result += convertLessThanOneThousand(crore) + " Crore ";
+    if (lakh > 0) result += convertLessThanOneThousand(lakh) + " Lakh ";
+    if (thousand > 0) result += convertLessThanOneThousand(thousand) + " Thousand ";
+    if (remainder > 0) result += convertLessThanOneThousand(remainder);
     return result.trim();
   }
-
-  // Handle decimal part
   const integerPart = Math.floor(num);
   const decimalPart = Math.round((num - integerPart) * 100);
-
   let result = convert(integerPart);
-
-  if (decimalPart > 0) {
-    result += " and " + convert(decimalPart) + " Paise";
-  }
-
+  if (decimalPart > 0) result += " and " + convert(decimalPart) + " Paise";
   return result;
 }
 
-function BillingPreview({
-  clientInfo,
-  quotationDate,
-  quotationRef,
-  items,
-  supplyInfo,
-  billingSerial,
-}: any) {
-  const previewColumns = [
-    {
-      title: "S.No",
-      render: (_: any, __: any, idx: number) => idx + 1,
-      onHeaderCell: () => ({
-        style: {
-          backgroundColor: "#f8f0ff",
-          color: "black",
-          fontWeight: "bold",
-          whiteSpace: "nowrap",
-        },
-      }),
-    },
-    {
-      title: "Item Description",
-      dataIndex: "item",
-      render: (text: string) => <span>{text}</span>,
-      width: "20vw",
-      onHeaderCell: () => ({
-        style: {
-          backgroundColor: "#f8f0ff",
-          color: "black",
-          fontWeight: "bold",
-          whiteSpace: "nowrap",
-        },
-      }),
-    },
-    {
-      title: "HSN Code",
-      dataIndex: "hsnCode",
-      render: (text: string) => <span>{text || "-"}</span>,
-      // width: "8vw",
-      onHeaderCell: () => ({
-        style: {
-          backgroundColor: "#f8f0ff",
-          color: "black",
-          fontWeight: "bold",
-          whiteSpace: "nowrap",
-        },
-      }),
-    },
-    {
-      title: "Rate (₹)",
-      dataIndex: "rate",
-      render: (text: string) => <span>₹{text}</span>,
-      onHeaderCell: () => ({
-        style: {
-          backgroundColor: "#f8f0ff",
-          color: "black",
-          fontWeight: "bold",
-          whiteSpace: "nowrap",
-        },
-      }),
-    },
-    {
-      title: "Qty",
-      dataIndex: "qty",
-      render: (text: string) => <span>{text}</span>,
-      onHeaderCell: () => ({
-        style: {
-          backgroundColor: "#f8f0ff",
-          color: "black",
-          fontWeight: "bold",
-          whiteSpace: "nowrap",
-        },
-      }),
-    },
-    {
-      title: "Amount (₹)",
-      render: (_: any, record: any) => (
-        <span>₹{(record.rate * record.qty).toFixed(2)}</span>
-      ),
-      onHeaderCell: () => ({
-        style: {
-          backgroundColor: "#f8f0ff",
-          color: "black",
-          fontWeight: "bold",
-          whiteSpace: "nowrap",
-        },
-      }),
-    },
-  ];
+// Purple — used only as accent (borders + text). Backgrounds stay white/very-light-gray.
+const accent = "#6d28d9";
+const accentLight = "#f5f3ff";   // barely-there tint — prints as white in B&W
+const borderColor = "#c4b5fd";
+const divider = "#e5e7eb";
 
-  const totalAmount = items.reduce(
-    (sum: any, item: any) => sum + item.rate * item.qty,
-    0
-  );
+const thS = (align: "center" | "left" | "right", width?: string): React.CSSProperties => ({
+  border: `1px solid ${divider}`,
+  borderBottom: `2px solid ${accent}`,
+  padding: "7px 9px",
+  textAlign: align,
+  fontWeight: "bold",
+  fontSize: "12px",
+  backgroundColor: "#f9fafb",
+  color: "#111",
+  whiteSpace: "nowrap",
+  ...(width ? { width } : {}),
+});
 
-  const gstAmount = (totalAmount * 0.18).toFixed(2); // 18% GST
+const tdS = (align: "center" | "left" | "right", extra?: React.CSSProperties): React.CSSProperties => ({
+  border: `1px solid ${divider}`,
+  padding: "7px 9px",
+  textAlign: align,
+  fontSize: "12px",
+  verticalAlign: "top",
+  color: "#111",
+  ...extra,
+});
+
+const fieldLabel: React.CSSProperties = { color: accent, fontWeight: "bold" };
+
+const addressBox = (name: string, firm: string, address: string, state?: string, pinCode?: string, gstin?: string): React.ReactNode => (
+  <div style={{ padding: "10px 14px 18px", minHeight: "90px", fontSize: "12px", color: "#111" }}>
+    <div><span style={fieldLabel}>Name :</span> {name}</div>
+    {firm && <div style={{ marginTop: "4px" }}><span style={fieldLabel}>Firm :</span> {firm}</div>}
+    <div style={{ marginTop: "4px" }}><span style={fieldLabel}>Address :</span> {address}</div>
+    <div style={{ marginTop: "6px" }}>
+      <span style={fieldLabel}>State :</span>{" "}{state || <span style={{ borderBottom: "1px solid #bbb", display: "inline-block", minWidth: "80px" }}>&nbsp;</span>}
+      &nbsp;&nbsp;
+      <span style={fieldLabel}>Pin :</span>{" "}{pinCode || <span style={{ borderBottom: "1px solid #bbb", display: "inline-block", minWidth: "50px" }}>&nbsp;</span>}
+    </div>
+    <div style={{ marginTop: "6px" }}>
+      <span style={fieldLabel}>GSTIN :</span>{" "}
+      {gstin || <span style={{ borderBottom: "1px solid #bbb", display: "inline-block", minWidth: "180px" }}>&nbsp;</span>}
+    </div>
+  </div>
+);
+
+function BillingPreview({ clientInfo, quotationDate, quotationRef, items, supplyInfo, billingSerial, shippedToInfo }: any) {
+  const totalAmount = items.reduce((sum: number, item: any) => sum + item.rate * item.qty, 0);
+  const gstAmount = (totalAmount * 0.18).toFixed(2);
   const finalAmount = (totalAmount + parseFloat(gstAmount)).toFixed(2);
+  const invoiceNumber = billingSerial || formatSerialNumber(0, "billing");
+  const hasShippedTo = shippedToInfo?.name?.trim();
 
   return (
     <div className="h-full p-4 overflow-y-auto custom-scrollbar">
-      <Card ref={quotationRef} style={{ paddingBottom: "20px" }}>
-        <div
-          style={{
-            textAlign: "center",
-            fontSize: "15px",
-            fontWeight: "bold",
-            marginBottom: "15px",
-            color: "black",
-            borderBottom: "1px solid black",
-            paddingBottom: "6px",
-          }}
-        >
-          INVOICE - #{billingSerial || formatSerialNumber(0, "billing")}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <div
-              style={{ fontWeight: "bold", fontSize: "22px", color: "black" }}
-            >
-              GURUJI
-            </div>
-            <div
-              style={{ fontWeight: "bold", fontSize: "22px", color: "black" }}
-            >
-              ENGINEERING
-            </div>
-            <div
-              style={{ fontWeight: "bold", fontSize: "22px", color: "black" }}
-            >
-              WORKS
-            </div>
-          </div>
-          <div>
-            <img src="/GEWlogo2.png" alt="logo" style={{ height: "120px" }} />
-          </div>
-        </div>
+      <div ref={quotationRef} style={{ fontFamily: "Arial, sans-serif", fontSize: "11px", color: "#111", background: "#fff", padding: "16px" }}>
+        <div style={{ border: `1px solid ${borderColor}`, borderRadius: "4px", overflow: "hidden" }}>
 
-        {/* Supply Information Card */}
-        {supplyInfo?.showInPreview && (
-          <div style={{ marginTop: "0px", marginBottom: "6px" }}>
-            <Card
-              style={{
-                background: "#f8f0ff",
-                border: "1px solid #d4b5ff",
-                padding: "0px",
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: "bold",
-                  fontSize: "15px",
-                  marginBottom: "3px",
-                  color: "#000000",
-                }}
-              >
-                SUPPLY INFORMATION:
+          {/* Colored top accent stripe */}
+          <div style={{ height: "5px", background: accent }} />
+
+          {/* ── HEADER ── white background, color in text + border only */}
+          <div style={{ display: "flex", alignItems: "stretch", borderBottom: `1px solid ${divider}`, background: "#fff" }}>
+            {/* Logo */}
+            <div style={{
+              padding: "12px 14px", borderRight: `1px solid ${divider}`,
+              display: "flex", alignItems: "center", justifyContent: "center", minWidth: "85px",
+              background: accentLight,
+            }}>
+              <img src="/GEWlogo2.png" alt="GEW" style={{ height: "65px", width: "auto" }} />
+            </div>
+            {/* Company Info */}
+            <div style={{ flex: 1, padding: "10px 16px", textAlign: "center", borderRight: `1px solid ${divider}` }}>
+              <div style={{ fontWeight: "bold", fontSize: "19px", color: accent, letterSpacing: "0.5px" }}>
+                GURUJI ENGINEERING WORKS
               </div>
-              <div
-                style={{
-                  fontSize: "14px",
-                  color: "#000000",
-                  display: "flex",
-                  gap: "20px",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  {supplyInfo?.showDateOfSupply && (
-                    <div>
-                      Date of Supply:{" "}
-                      <b>
-                        {supplyInfo?.dateOfSupply
-                          ? supplyInfo.dateOfSupply.format("DD/MM/YYYY")
-                          : ""}
-                      </b>
-                    </div>
-                  )}
-                  {supplyInfo?.showPlaceOfSupply && (
-                    <div>
-                      Place of Supply: {supplyInfo?.placeOfSupply || ""}
-                    </div>
-                  )}
-                </div>
-                <div style={{ flex: 1 }}>
-                  {supplyInfo?.showTransportationMode && (
-                    <div>
-                      Transportation Mode:{" "}
-                      {supplyInfo?.transportationMode || ""}
-                    </div>
-                  )}
-                  {supplyInfo?.showVehicleNumber && (
-                    <div>Vehicle Number: {supplyInfo?.vehicleNumber || ""}</div>
-                  )}
-                </div>
+              <div style={{ fontSize: "10px", color: "#555", marginTop: "2px" }}>
+                REPAIRING OF : ALL PARTS REPAIR & JOB WORKS
               </div>
-            </Card>
+              <div style={{ fontSize: "10px", color: "#444", marginTop: "4px" }}>{COMPANY_CONFIG.address}</div>
+              <div style={{ fontSize: "10px", color: "#444", marginTop: "2px" }}>
+                Mobile : {COMPANY_CONFIG.contact} &nbsp;|&nbsp; Email : {COMPANY_CONFIG.email}
+              </div>
+            </div>
+            {/* Document Type */}
+            <div style={{ padding: "10px 14px", textAlign: "center", minWidth: "130px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{
+                border: `2px solid ${accent}`, borderRadius: "4px",
+                padding: "4px 12px", marginBottom: "6px", background: accentLight,
+              }}>
+                <div style={{ fontWeight: "bold", fontSize: "13px", color: accent, letterSpacing: "1px" }}>TAX INVOICE</div>
+              </div>
+              <div style={{ fontSize: "9px", color: "#666" }}>GSTIN</div>
+              <div style={{ fontWeight: "bold", fontSize: "10px", color: "#111" }}>{COMPANY_CONFIG.gstin}</div>
+              <div style={{ fontSize: "9px", color: "#555", marginTop: "4px" }}>Uttar Pradesh | Code: 09</div>
+            </div>
           </div>
-        )}
 
-        <div style={{ display: "flex", gap: "12px", marginTop: "15px" }}>
-          <Card style={{ flex: 1, background: "#E6FFE6", padding: "0px" }}>
-            {/* From section */}
-            <div
-              style={{
-                fontWeight: "bold",
-                fontSize: "16px",
-                marginBottom: "4px",
-              }}
-            >
-              FROM:
+          {/* ── INVOICE DETAILS ── */}
+          <div style={{ display: "flex", borderBottom: `1px solid ${divider}`, background: "#fafafa" }}>
+            <div style={{ flex: 1, padding: "7px 12px", borderRight: `1px solid ${divider}`, borderLeft: `3px solid ${accent}` }}>
+              <div style={{ marginBottom: "3px" }}>
+                <span style={fieldLabel}>Invoice No. :</span> {invoiceNumber}
+              </div>
+              <div>
+                <span style={fieldLabel}>Invoice Date :</span>{" "}
+                {quotationDate ? quotationDate.format("DD/MM/YYYY") : "___________"}
+              </div>
+              <div style={{ marginTop: "3px", fontSize: "10px", color: "#666" }}>
+                State — Uttar Pradesh &nbsp;|&nbsp; State Code : 09
+              </div>
             </div>
-            <div style={{ fontSize: "14px" }}>
-              <strong>{COMPANY_CONFIG.name}</strong>
+            <div style={{ flex: 1, padding: "7px 12px" }}>
+              {supplyInfo?.showInPreview ? (
+                <div style={{ display: "flex", gap: "20px" }}>
+                  <div>
+                    {supplyInfo?.showTransportationMode && (
+                      <div><span style={fieldLabel}>Transport Mode :</span> {supplyInfo.transportationMode || "—"}</div>
+                    )}
+                    {supplyInfo?.showDateOfSupply && (
+                      <div style={{ marginTop: "3px" }}>
+                        <span style={fieldLabel}>Date of Supply :</span>{" "}
+                        {supplyInfo.dateOfSupply?.format("DD/MM/YYYY") || "—"}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    {supplyInfo?.showVehicleNumber && (
+                      <div><span style={fieldLabel}>Veh. No. :</span> {supplyInfo.vehicleNumber || "—"}</div>
+                    )}
+                    {supplyInfo?.showPlaceOfSupply && (
+                      <div style={{ marginTop: "3px" }}>
+                        <span style={fieldLabel}>Place of Supply :</span> {supplyInfo.placeOfSupply || "—"}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: "#aaa", fontSize: "10px", fontStyle: "italic", paddingTop: "4px" }}>Supply info hidden</div>
+              )}
             </div>
-            <div style={{ fontSize: "14px" }}>{COMPANY_CONFIG.company}</div>
-            <div style={{ fontSize: "14px" }}>{COMPANY_CONFIG.address}</div>
-          </Card>
-
-          <Card style={{ flex: 1, background: "#E6FFE6", padding: "0px" }}>
-            {/* To section */}
-            <div
-              style={{
-                fontWeight: "bold",
-                fontSize: "16px",
-                marginBottom: "4px",
-              }}
-            >
-              BILL TO:
-            </div>
-            <div style={{ fontSize: "14px" }}>
-              <strong>{clientInfo.name}</strong>
-            </div>
-            <div style={{ fontSize: "14px" }}>{clientInfo.firm}</div>
-            <div style={{ fontSize: "14px" }}>{clientInfo.address}</div>
-          </Card>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: "15px",
-            marginBottom: "15px",
-            padding: "8px",
-            backgroundColor: "#FAFAFA",
-            borderRadius: "6px",
-          }}
-        >
-          <div style={{ fontWeight: "bold", fontSize: "14px" }}>
-            Invoice Date:{" "}
-            {quotationDate ? quotationDate.format("DD/MM/YYYY") : ""}
           </div>
-          <div style={{ fontWeight: "bold", fontSize: "14px" }}>
-            GSTIN: {COMPANY_CONFIG.gstin}
+
+          {/* ── BILLED TO | SHIPPED TO ── */}
+          <div style={{ display: "flex", borderBottom: `1px solid ${divider}` }}>
+            <div style={{ flex: 1, borderRight: `1px solid ${divider}` }}>
+              <div style={{
+                background: accentLight, padding: "8px 14px", fontWeight: "bold",
+                fontSize: "11px", color: accent, borderBottom: `1px solid ${borderColor}`,
+                borderLeft: `3px solid ${accent}`,
+              }}>
+                Details of Receiver / Billed To
+              </div>
+              {addressBox(clientInfo.name, clientInfo.firm, clientInfo.address, clientInfo.state, clientInfo.pinCode, clientInfo.gstin)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                background: accentLight, padding: "8px 14px", fontWeight: "bold",
+                fontSize: "11px", color: accent, borderBottom: `1px solid ${borderColor}`,
+                borderLeft: `3px solid ${accent}`,
+              }}>
+                Details of Consignee / Shipped To
+              </div>
+              {hasShippedTo
+                ? addressBox(shippedToInfo.name, "", shippedToInfo.address)
+                : addressBox(clientInfo.name, clientInfo.firm, clientInfo.address, clientInfo.state, clientInfo.pinCode, clientInfo.gstin)
+              }
+            </div>
           </div>
-        </div>
 
-        <Table
-          dataSource={items}
-          columns={previewColumns}
-          pagination={false}
-          size="small"
-          rowClassName={(record: any, index: number) =>
-            index % 2 === 1 ? "#F8F9FA" : "white"
-          }
-          bordered
-        />
+          {/* ── ITEMS TABLE ── */}
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={thS("center", "40px")}>S. No.</th>
+                <th style={thS("left")}>Description of Goods / Services</th>
+                <th style={thS("center", "80px")}>HSN / SAC Code</th>
+                <th style={thS("center", "65px")}>QTY / UNIT</th>
+                <th style={thS("right", "90px")}>Rate (₹)</th>
+                <th style={thS("right", "110px")}>Estimated Value (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item: any, idx: number) => (
+                <tr key={item.key} style={{ backgroundColor: idx % 2 === 0 ? "#fff" : "#fafafa" }}>
+                  <td style={tdS("center")}>{idx + 1}</td>
+                  <td style={tdS("left")}>{item.item}</td>
+                  <td style={tdS("center")}>{item.hsnCode || "—"}</td>
+                  <td style={tdS("center")}>{item.qty}</td>
+                  <td style={tdS("right")}>₹{Number(item.rate).toFixed(2)}</td>
+                  <td style={tdS("right", { fontWeight: "bold" })}>₹{(item.rate * item.qty).toFixed(2)}</td>
+                </tr>
+              ))}
+              {Array.from({ length: Math.max(0, 5 - items.length) }).map((_, i) => (
+                <tr key={`pad-${i}`} style={{ backgroundColor: (items.length + i) % 2 === 0 ? "#fff" : "#fafafa" }}>
+                  <td style={tdS("center", { height: "24px" })}>&nbsp;</td>
+                  <td style={tdS("left")}>&nbsp;</td>
+                  <td style={tdS("center")}>&nbsp;</td>
+                  <td style={tdS("center")}>&nbsp;</td>
+                  <td style={tdS("right")}>&nbsp;</td>
+                  <td style={tdS("right")}>&nbsp;</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        {/* Amount Summary Section */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: "20px",
-          }}
-        >
-          {/* Grand Total in Words */}
-          <div style={{ flex: 1, paddingRight: "20px" }}>
-            <div
-              style={{
-                fontSize: "14px",
-                fontWeight: "bold",
-                border: "1px solid #d9d9d9",
-                padding: "10px",
-                borderRadius: "6px",
-                backgroundColor: "#E6FFE6",
-              }}
-            >
-              <div style={{ marginBottom: "5px" }}>Grand Total in Words:</div>
-              <div style={{ fontSize: "13px", color: "#333" }}>
+          {/* ── FOOTER ── */}
+          <div style={{ display: "flex", borderTop: `2px solid ${accent}` }}>
+            {/* Amount in words + Authorised Signatory */}
+            <div style={{ flex: 1, padding: "12px 14px", borderRight: `1px solid ${divider}` }}>
+              <div style={{ fontSize: "10px", color: accent, fontWeight: "bold", marginBottom: "4px" }}>
+                Total Amount in Words (Rs.) :
+              </div>
+              <div style={{ fontSize: "11px", fontStyle: "italic", color: "#333" }}>
                 {numberToWords(parseFloat(finalAmount))} Rupees Only
               </div>
+              <div style={{ marginTop: "44px" }}>
+                <div style={{ fontWeight: "bold", fontSize: "11px", color: "#111" }}>
+                  FOR GURUJI ENGINEERING WORKS
+                </div>
+                <div style={{
+                  marginTop: "40px", borderTop: `1px solid ${accent}`, paddingTop: "4px",
+                  fontSize: "10px", textAlign: "center", width: "165px", color: "#444"
+                }}>
+                  Authorised Signatory
+                </div>
+              </div>
             </div>
-            {/* FOR GURUJI ENGINEERING WORKS - positioned below grand total in words */}
-            <div
-              style={{
-                fontSize: "12px",
-                fontWeight: "bold",
-                // color: "#1890ff",
-                marginTop: "10px",
-                marginLeft: "70px",
-                textAlign: "left",
-              }}
-            >
-              FOR GURUJI ENGINEERING WORKS
+            {/* Amounts */}
+            <div style={{ minWidth: "220px" }}>
+              {[
+                { label: "Freight / Other Charges", value: "—", bold: false },
+                { label: "TOTAL VALUE", value: `₹${totalAmount.toFixed(2)}`, bold: true },
+                { label: "Add GST @ 18%", value: `₹${gstAmount}`, bold: false },
+              ].map(({ label, value, bold }, i) => (
+                <div key={label} style={{
+                  display: "flex", justifyContent: "space-between", padding: "6px 12px",
+                  borderBottom: `1px solid ${divider}`, fontSize: "11px",
+                  backgroundColor: bold ? accentLight : i % 2 === 0 ? "#fff" : "#fafafa",
+                }}>
+                  <span style={bold ? { fontWeight: "bold", color: accent } : {}}>{label}</span>
+                  <span style={bold ? { fontWeight: "bold", color: accent } : {}}>{value}</span>
+                </div>
+              ))}
+              {/* Grand Total — light accent background, dark bold text */}
+              <div style={{
+                display: "flex", justifyContent: "space-between", padding: "8px 12px",
+                background: accentLight,
+                borderTop: `2px solid ${accent}`,
+                borderBottom: `1px solid ${borderColor}`,
+              }}>
+                <span style={{ fontWeight: "bold", fontSize: "13px", color: "#111" }}>GRAND TOTAL</span>
+                <span style={{ fontWeight: "bold", fontSize: "13px", color: accent }}>₹{finalAmount}</span>
+              </div>
+              {/* Receiver's Signature */}
+              <div style={{ padding: "10px 12px", textAlign: "center", paddingTop: "48px" }}>
+                <div style={{
+                  borderTop: `1px solid ${accent}`, paddingTop: "4px", fontSize: "10px",
+                  display: "inline-block", minWidth: "130px", color: "#444"
+                }}>
+                  Receiver's Signature
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Amount Details */}
-          <div style={{ flex: 0.5, minWidth: "200px" }}>
-            <div
-              style={{
-                border: "1px solid #d9d9d9",
-                borderRadius: "6px",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "8px 12px",
-                  backgroundColor: "#fafafa",
-                  borderBottom: "1px solid #d9d9d9",
-                }}
-              >
-                <span style={{ fontWeight: "bold" }}>Subtotal:</span>
-                <span style={{ fontWeight: "bold" }}>
-                  ₹{totalAmount.toFixed(2)}
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "8px 12px",
-                  backgroundColor: "#fafafa",
-                  borderBottom: "1px solid #d9d9d9",
-                }}
-              >
-                <span style={{ fontWeight: "bold" }}>GST (18%):</span>
-                <span style={{ fontWeight: "bold" }}>₹{gstAmount}</span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  backgroundColor: "#E6FFE6",
-                  borderTop: "2px solid #52c41a",
-                }}
-              >
-                <span style={{ fontWeight: "bold", fontSize: "16px" }}>
-                  GRAND TOTAL:
-                </span>
-                <span
-                  style={{
-                    fontWeight: "bold",
-                    fontSize: "16px",
-                    // color: "#1890ff",
-                  }}
-                >
-                  ₹{finalAmount}
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
-
-        {/* Signature Section */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: "50px",
-            marginBottom: "0px",
-          }}
-        >
-          {/* Company Signature - Left Side */}
-          <div style={{ flex: 1, paddingRight: "10px" }}>
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "#666",
-                  fontStyle: "italic",
-                }}
-              >
-                Authorized Signatory
-              </div>
-            </div>
-          </div>
-
-          {/* Receiver's Signature - Right Side */}
-          <div style={{ flex: 1, paddingLeft: "15px" }}>
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  color: "#666",
-                  marginBottom: "20px",
-                }}
-              >
-                Receiver's Signature
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ textAlign: "center", fontSize: "12px", color: "#666" }}>
-          For any inquiries regarding this invoice, please contact us at:{" "}
-          <b>{COMPANY_CONFIG.email}</b> or{" "}
-          <b>{COMPANY_CONFIG.contact.split(",")[0]}</b>
-        </div>
-      </Card>
+      </div>
     </div>
   );
 }
