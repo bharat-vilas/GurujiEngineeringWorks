@@ -42,10 +42,10 @@ const SERVICES = [
 ];
 
 const STATS = [
-  { value: "15+", label: "Years of Experience" },
-  { value: "500+", label: "Projects Completed" },
-  { value: "200+", label: "Satisfied Clients" },
-  { value: "100%", label: "Quality Commitment" },
+  { value: "8+", label: "Years of Experience" },
+  { value: "150+", label: "Projects Completed" },
+  { value: "80+", label: "Satisfied Clients" },
+  { value: "2018", label: "Est. Year" },
 ];
 
 const NAV_LINKS = ["Services", "About", "Contact"];
@@ -296,13 +296,14 @@ export default function LandingPage() {
                 Built on Precision,<br />Driven by Quality
               </h2>
               <p className="text-emerald-100 leading-relaxed mb-5 text-base">
-                Guruji Engineering Works is a trusted name in precision machining and custom engineering
-                solutions. Our state-of-the-art facility is equipped with modern CNC machines and
-                skilled craftsmen who take pride in every component we produce.
+                Founded in 2018, Guruji Engineering Works is a trusted name in precision machining,
+                fabrication, and custom engineering solutions based in Sahibabad Industrial Area, Uttar Pradesh.
+                Over 8+ years, we have built a reputation for delivering high-quality work with consistency and reliability.
               </p>
               <p className="text-emerald-100 leading-relaxed text-base">
-                We serve industries ranging from automotive and heavy machinery to oil &amp; gas and
-                infrastructure — delivering components that meet the most demanding specifications, on schedule.
+                With 150+ projects completed and 80+ satisfied clients, we serve industries ranging from
+                automotive and heavy machinery to infrastructure — delivering components that meet the most
+                demanding specifications, on time and within budget.
               </p>
             </motion.div>
 
@@ -346,9 +347,9 @@ export default function LandingPage() {
 
           <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto mb-16">
             {[
-              { icon: Phone, label: "Phone", value: "+91 98765 43210", href: "tel:+919876543210" },
-              { icon: Mail, label: "Email", value: "info@gurujiengg.com", href: "mailto:info@gurujiengg.com" },
-              { icon: MapPin, label: "Location", value: "Industrial Area, Maharashtra, India", href: "#" },
+              { icon: Phone, label: "Phone", value: "+91 88518 22243 / +91 80763 37582", href: "tel:+918851822243" },
+              { icon: Mail, label: "Email", value: "ramv60074@gmail.com", href: "mailto:ramv60074@gmail.com" },
+              { icon: MapPin, label: "Location", value: "Sahibabad Industrial Area, UP, India", href: "#" },
             ].map((c, i) => {
               const Icon = c.icon;
               return (

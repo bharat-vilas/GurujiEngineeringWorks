@@ -37,7 +37,20 @@ const empty: Omit<Employee, "_id"> = {
   status: "active", employeeType: "full-time",
 };
 
-const DEPARTMENTS = ["Engineering", "Maintenance", "Production", "Administration", "Store", "Other"];
+const DEPARTMENTS = [
+  "Production",
+  "Machining",
+  "Fabrication & Welding",
+  "CNC Operations",
+  "Quality Control",
+  "Maintenance & Repair",
+  "Store & Inventory",
+  "Design & Engineering",
+  "Dispatch & Logistics",
+  "Administration",
+  "Accounts",
+  "Other",
+];
 
 const avatarColor = (name: string) => {
   const colors = [

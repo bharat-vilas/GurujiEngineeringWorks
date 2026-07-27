@@ -193,25 +193,25 @@ export default function BillingCanvas({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Receiver Name</Label>
-                <Input value={clientInfo.name} readOnly className="h-9 text-sm" />
+                <Input value={clientInfo.name} onChange={e => setClientInfo((p: any) => ({ ...p, name: e.target.value }))} className="h-9 text-sm" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Receiver Company</Label>
-                <Input value={clientInfo.firm} readOnly className="h-9 text-sm" />
+                <Input value={clientInfo.firm} onChange={e => setClientInfo((p: any) => ({ ...p, firm: e.target.value }))} className="h-9 text-sm" />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Receiver Address</Label>
-              <Input value={clientInfo.address} readOnly className="h-9 text-sm" />
+              <Input value={clientInfo.address} onChange={e => setClientInfo((p: any) => ({ ...p, address: e.target.value }))} className="h-9 text-sm" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">State</Label>
-                <Input value={clientInfo.state} readOnly className="h-9 text-sm" />
+                <Input value={clientInfo.state} onChange={e => setClientInfo((p: any) => ({ ...p, state: e.target.value }))} className="h-9 text-sm" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Pin Code</Label>
-                <Input value={clientInfo.pinCode} readOnly className="h-9 text-sm" />
+                <Input value={clientInfo.pinCode} onChange={e => setClientInfo((p: any) => ({ ...p, pinCode: e.target.value }))} className="h-9 text-sm" />
               </div>
             </div>
           </div>

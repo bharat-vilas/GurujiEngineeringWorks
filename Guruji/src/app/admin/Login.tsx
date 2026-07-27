@@ -11,6 +11,11 @@ import { authUtils } from "../../utils/auth";
 
 type Mode = "login" | "register" | "reset";
 
+const sha256 = async (text: string): Promise<string> => {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+};
+
 const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -66,7 +71,8 @@ const Login = () => {
     setLoading(true);
     try {
       if (mode === "login") {
-        const response = await api.post("/api/auth/login", { email, password });
+        const hashed = await sha256(password);
+        const response = await api.post("/api/auth/login", { email, password: hashed });
         if (!response.ok) {
           const d = await response.json();
           toast.error(d.message || "Invalid email or password.");
@@ -77,13 +83,15 @@ const Login = () => {
         toast.success("Welcome back!");
         navigate("/app");
       } else if (mode === "register") {
-        const response = await api.post("/api/auth/register", { email, password });
+        const hashed = await sha256(password);
+        const response = await api.post("/api/auth/register", { email, password: hashed });
         const data = await response.json();
         if (!response.ok) { toast.error(data.message || "Registration failed."); return; }
         toast.success("Account created! You can now log in.");
         setMode("login");
       } else {
-        const response = await api.post("/api/auth/reset-password", { email, newPassword });
+        const hashed = await sha256(newPassword);
+        const response = await api.post("/api/auth/reset-password", { email, newPassword: hashed });
         const data = await response.json();
         if (!response.ok) { toast.error(data.message || "Reset failed."); return; }
         toast.success("Password reset! Please log in.");
@@ -246,15 +254,9 @@ const Login = () => {
                 ← Back to Sign In
               </button>
             ) : (
-              <>
-                <button onClick={() => setMode("register")} className="text-sm text-primary hover:underline font-medium transition-colors">
-                  Create Account
-                </button>
-                <span className="text-muted-foreground">·</span>
-                <button onClick={() => setMode("reset")} className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors">
-                  Forgot Password?
-                </button>
-              </>
+              <button onClick={() => setMode("reset")} className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors">
+                Forgot Password?
+              </button>
             )}
           </div>
         </CardContent>
