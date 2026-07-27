@@ -248,17 +248,13 @@ const Login = () => {
           </form>
 
           {/* Links */}
-          <div className="mt-5 flex items-center justify-center gap-4 flex-wrap">
-            {mode !== "login" ? (
+          {mode !== "login" && (
+            <div className="mt-5 flex items-center justify-center">
               <button onClick={() => setMode("login")} className="text-sm text-primary hover:underline font-medium transition-colors">
                 ← Back to Sign In
               </button>
-            ) : (
-              <button onClick={() => setMode("reset")} className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors">
-                Forgot Password?
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
