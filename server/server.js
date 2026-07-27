@@ -17,9 +17,21 @@ import documentQueueRoutes from "./routes/documentQueue.js";
 
 const app = express();
 /* ────────────────────────────────── Middlewares ────────────────────────────────── */
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"], // add other origins as needed
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked: ${origin}`));
+      }
+    },
     credentials: true,
   })
 );
