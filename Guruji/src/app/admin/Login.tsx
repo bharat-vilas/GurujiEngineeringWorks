@@ -248,13 +248,23 @@ const Login = () => {
           </form>
 
           {/* Links */}
-          {mode !== "login" && (
-            <div className="mt-5 flex items-center justify-center">
+          <div className="mt-5 flex items-center justify-center gap-4 flex-wrap">
+            {mode !== "login" ? (
               <button onClick={() => setMode("login")} className="text-sm text-primary hover:underline font-medium transition-colors">
                 ← Back to Sign In
               </button>
-            </div>
-          )}
+            ) : (
+              <>
+                <button onClick={() => setMode("register")} className="text-sm text-primary hover:underline font-medium transition-colors">
+                  Create Account
+                </button>
+                <span className="text-muted-foreground">·</span>
+                <button onClick={() => setMode("reset")} className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors">
+                  Forgot Password?
+                </button>
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
