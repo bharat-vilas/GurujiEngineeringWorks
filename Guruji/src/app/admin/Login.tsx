@@ -32,7 +32,7 @@ const Login = () => {
   useEffect(() => {
     if (authUtils.isAuthenticated()) navigate("/app");
   }, [navigate]);
-
+ 
   useEffect(() => {
     setEmail("");
     setPassword("");
